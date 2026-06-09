@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Prediction Project</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 60px 20px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            color: #58a6ff;
+            margin-bottom: 12px;
+        }
+        .subtitle {
+            color: #8b949e;
+            font-size: 1rem;
+            margin-bottom: 48px;
+        }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            max-width: 900px;
+            width: 100%;
+        }
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 24px;
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            color: #58a6ff;
+            margin-bottom: 8px;
+        }
+        .card p {
+            font-size: 0.9rem;
+            color: #8b949e;
+            line-height: 1.6;
+        }
+        .badge {
+            display: inline-block;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 0.75rem;
+            color: #58a6ff;
+            margin-top: 10px;
+            margin-right: 4px;
+        }
+        footer {
+            margin-top: 60px;
+            color: #484f58;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>ML Prediction Project</h1>
+    <p class="subtitle">Master Data Science — EPITA Paris</p>
+
+    <div class="card-grid">
+        <div class="card">
+            <h2>Objectif</h2>
+            <p>Collecter des données multi-sources, analyser et construire un pipeline de prédiction ML avec interface utilisateur.</p>
+            <span class="badge">Data Collection</span>
+            <span class="badge">Modeling</span>
+        </div>
+        <div class="card">
+            <h2>Pipeline</h2>
+            <p>Acquisition des données → EDA → Feature Engineering → Training → Evaluation → Déploiement Streamlit.</p>
+            <span class="badge">Scikit-learn</span>
+            <span class="badge">Streamlit</span>
+        </div>
+        <div class="card">
+            <h2>Stack</h2>
+            <p>Python, Pandas, Scikit-learn, Matplotlib/Seaborn, Streamlit. Données collectées via API et web scraping.</p>
+            <span class="badge">Python</span>
+            <span class="badge">API</span>
+            <span class="badge">Scraping</span>
+        </div>
+        <div class="card">
+            <h2>Références</h2>
+            <p>Analyse de prédiction EUR/USD Forex et autres études de cas de machine learning appliqué.</p>
+            <span class="badge">Forex</span>
+            <span class="badge">Time Series</span>
+        </div>
+    </div>
+
+    <footer>branch_lee — ML_prediction_project — last push: 2026-06-09 16:59</footer>
+</body>
+</html>
