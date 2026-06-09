@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EUR/USD Forex Prediction with Machine Learning</title>
+  <style>
+    :root {
+      --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+      --radius: 10px;
+      --sidebar-w: 260px;
+      --transition: 0.25s ease;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --bg2: #181b24;
+      --bg3: #1e2130;
+      --border: #2a2d3e;
+      --text: #e2e8f0;
+      --text-muted: #8892a4;
+      --accent: #6c8ef7;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --red: #f87171;
+      --tab-active-bg: #6c8ef7;
+      --tab-active-text: #fff;
+      --chart-grid: rgba(255,255,255,0.06);
+    }
+
+    [data-theme="light"] {
+      --bg: #f0f2f8;
+      --bg2: #ffffff;
+      --bg3: #e8ecf4;
+      --border: #d0d5e8;
+      --text: #1a1f36;
+      --text-muted: #6b7280;
+      --accent: #4361ee;
+      --accent2: #7c3aed;
+      --green: #059669;
+      --amber: #d97706;
+      --red: #dc2626;
+      --tab-active-bg: #4361ee;
+      --tab-active-text: #fff;
+      --chart-grid: rgba(0,0,0,0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    #topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 16px;
+      z-index: 100;
+    }
+
+    #toggle-sidebar-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius);
+      transition: background var(--transition);
+    }
+
+    #toggle-sidebar-btn:hover {
+      background: var(--bg3);
+    }
+
+    .topbar-title {
+      flex: 1;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .topbar-title span {
+      color: var(--accent);
+    }
+
+    #theme-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius);
+      transition: background var(--transition);
+    }
+
+    #theme-btn:hover {
+      background: var(--bg3);
+    }
+
+    #sidebar {
+      position: fixed;
+      left: 0;
+      top: 52px;
+      width: var(--sidebar-w);
+      height: calc(100vh - 52px);
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 16px 0;
+      transition: transform var(--transition);
+      z-index: 99;
+    }
+
+    #sidebar.hidden {
+      transform: translateX(calc(-1 * var(--sidebar-w)));
+    }
+
+    .sidebar-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 12px 16px 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 10px 16px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      border-left: 3px solid transparent;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .nav-link:hover {
+      color: var(--text);
+      background: var(--bg3);
+    }
+
+    .nav-link.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--bg3);
+      font-weight: 600;
+    }
+
+    #main {
+      margin-left: var(--sidebar-w);
+      margin-top: 52px;
+      padding: 36px 48px 80px;
+      transition: margin-left var(--transition);
+      max-width: 900px;
+      margin-right: auto;
+    }
+
+    #main.expanded {
+      margin-left: 0;
+    }
+
+    .page {
+      display: none;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    h2 {
+      font-size: 24px;
+      margin: 28px 0 16px;
+      font-weight: 700;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin: 20px 0 12px;
+      font-weight: 600;
+    }
+
+    p {
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+
+    .card-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .card-row > .card {
+      flex: 1;
+      min-width: 180px;
+      margin-bottom: 0;
+    }
+
+    .stat-val {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      background: var(--bg3);
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: var(--radius) var(--radius) 0 0;
+      transition: all var(--transition);
+      font-weight: 500;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+      background: var(--bg2);
+    }
+
+    .tab-btn.active {
+      background: var(--tab-active-bg);
+      color: var(--tab-active-text);
+      border: none;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: var(--bg3);
+      padding: 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+
+    .callout.green {
+      border-left-color: var(--green);
+    }
+
+    .callout.amber {
+      border-left-color: var(--amber);
+    }
+
+    .callout.red {
+      border-left-color: var(--red);
+    }
+
+    .callout p {
+      margin: 0;
+    }
+
+    .callout strong {
+      color: var(--accent);
+    }
+
+    .steps {
+      display: flex;
+      justify-content: space-between;
+      margin: 32px 0;
+      position: relative;
+    }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--border);
+      z-index: -1;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .step-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg3);
+      border: 2px solid var(--border);
+      margin: 0 auto 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all var(--transition);
+    }
+
+    .step.done .step-circle {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .step-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 7px;
+      background: var(--bg3);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      transition: width 0.6s ease;
+    }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 20px 0;
+    }
+
+    .compare-table th {
+      background: var(--bg3);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-table tbody tr:hover {
+      background: var(--bg3);
+    }
+
+    .badge-green {
+      display: inline-block;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--green);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-red {
+      display: inline-block;
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--red);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-accent {
+      display: inline-block;
+      background: rgba(108, 142, 247, 0.15);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--bg3);
+      outline: none;
+      -webkit-appearance: none;
+      margin: 16px 0;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(108, 142, 247, 0.2);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 0 3px rgba(108, 142, 247, 0.2);
+    }
+
+    .slider-val {
+      font-weight: 600;
+      color: var(--accent);
+      margin-left: 8px;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-switch {
+      width: 42px;
+      height: 24px;
+      background: var(--bg3);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      position: relative;
+      transition: background var(--transition);
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 1px;
+      left: 1px;
+      transition: transform var(--transition);
+    }
+
+    .toggle.on .toggle-switch {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .toggle.on .toggle-switch::after {
+      transform: translateX(18px);
+    }
+
+    .toggle-label {
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .chart-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 200px;
+      margin: 20px 0;
+    }
+
+    .bar {
+      flex: 1;
+      background: linear-gradient(180deg, var(--accent), var(--accent2));
+      border-radius: 4px 4px 0 0;
+      position: relative;
+      min-height: 4px;
+      transition: all var(--transition);
+    }
+
+    .bar:hover {
+      filter: brightness(1.1);
+    }
+
+    .bar-label {
+      position: absolute;
+      bottom: -24px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .bar-val {
+      position: absolute;
+      top: -24px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+    }
+
+    code {
+      background: var(--bg3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    pre {
+      background: var(--bg3);
+      padding: 16px;
+      border-radius: var(--radius);
+      overflow-x: auto;
+      margin: 16px 0;
+      border: 1px solid var(--border);
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      color: var(--text);
+    }
+
+    @media (max-width: 700px) {
+      #sidebar {
+        transform: translateX(calc(-1 * var(--sidebar-w)));
+      }
+
+      #sidebar.visible {
+        transform: translateX(0);
+      }
+
+      #main {
+        margin-left: 0;
+        padding: 24px 18px 60px;
+      }
+
+      #main.expanded {
+        margin-left: 0;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      .card-row {
+        flex-direction: column;
+      }
+
+      .compare-table {
+        font-size: 12px;
+      }
+
+      .compare-table th,
+      .compare-table td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <button id="toggle-sidebar-btn" onclick="toggleSidebar()">☰</button>
+    <div class="topbar-title">EUR/USD Forex <span>Prediction</span></div>
+    <button id="theme-btn" onclick="toggleTheme()">◐</button>
+  </div>
+
+  <div id="sidebar">
+    <div class="sidebar-label">Fundamentals</div>
+    <a class="nav-link active" onclick="showPage('overview')">Overview</a>
+    <a class="nav-link" onclick="showPage('problem')">Problem Setup</a>
+    <a class="nav-link" onclick="showPage('data')">Data & Features</a>
+
+    <div class="sidebar-label">Methodology</div>
+    <a class="nav-link" onclick="showPage('algorithms')">Algorithms</a>
+    <a class="nav-link" onclick="showPage('meta')">Meta-Estimators</a>
+    <a class="nav-link" onclick="showPage('preprocessing')">Preprocessing</a>
+
+    <div class="sidebar-label">Results</div>
+    <a class="nav-link" onclick="showPage('results')">Performance</a>
+    <a class="nav-link" onclick="showPage('insights')">Key Insights</a>
+    <a class="nav-link" onclick="showPage('limitations')">Limitations</a>
+  </div>
+
+  <div id="main">
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <h1>EUR/USD Forex Prediction</h1>
+      <p>Predicting currency pair direction using supervised machine learning across a 10-year historical dataset.</p>
+
+      <div class="card-row">
+        <div class="card">
+          <div class="stat-val">58.52%</div>
+          <div class="stat-label">Peak Accuracy</div>
+        </div>
+        <div class="card">
+          <div class="stat-val">32.48%</div>
+          <div class="stat-label">Annual Return</div>
+        </div>
+        <div class="card">
+          <div class="stat-val">21</div>
+          <div class="stat-label">ML Algorithms</div>
+        </div>
+        <div class="card">
+          <div class="stat-val">~2,500</div>
+          <div class="stat-label">Training Samples</div>
+        </div>
+      </div>
+
+      <div class="callout green">
+        <strong>Success metric:</strong> Meta-estimator decision tree on dataset 3 achieved highest profit of 32.48% annually in 2022, despite lower accuracy than some base models.
+      </div>
+
+      <h2>The Prediction Challenge</h2>
+      <p>The foreign exchange market processes roughly $5 trillion in daily volume with high volatility. Only 2% of traders successfully predict directional movement—the market responds to economic indicators, geopolitical events, central bank decisions, and human behavior simultaneously.</p>
+
+      <p>Predicting daily direction (binary classification: up or down) differs from forecasting exact price movements. The approach treats currency pairs as short-term directional bets rather than long-term value forecasting.</p>
+
+      <h2>Experimental Design</h2>
+      <p>The study spans April 2013 to December 2022, with data from 2013-2019 for training, 2020-2021 for validation, and 2022 for final evaluation. Economic indicators from the USA and European Union were combined with market indices (DAX, S&P500, NASDAQ) and 13 foreign exchange pairs to capture cross-market dynamics.</p>
+
+      <div class="callout amber">
+        <strong>Key limitation:</strong> Economic indicators are used at midnight valuation, whereas real releases occur throughout the trading day. This limits the model's ability to capture volatility spikes around announcement times.
+      </div>
+    </div>
+
+    <!-- PROBLEM SETUP -->
+    <div class="page" id="page-problem">
+      <h1>Problem Setup</h1>
+
+      <h2>Target Definition</h2>
+      <p>The binary target is defined simply: if tomorrow's EUR/USD close price exceeds today's close, the label is 1 (up). Otherwise, 0 (down).</p>
+
+      <pre><code>Direction(t) = 1 if close_price(t+1) > close_price(t)
+            = 0 otherwise</code></pre>
+
+      <p>This one-day-ahead prediction creates a straightforward binary classification problem. A 50% baseline represents random guessing.</p>
+
+      <h2>Trading Mechanics: Contract for Difference</h2>
+      <p>The strategy assumes trading via CFDs (Contracts for Difference), where profit depends on predicting direction correctly—not the magnitude of price movement.</p>
+
+      <p>A correct directional prediction on a large move is more profitable than a correct prediction on a small move. This means accuracy alone does not determine profit; the distribution of correct/incorrect predictions across high-volatility and low-volatility periods matters significantly.</p>
+
+      <div class="callout">
+        <strong>Critical insight:</strong> A model with 55% accuracy may outperform one with 57% accuracy if the 55% model captures the larger price swings correctly while the 57% model succeeds mostly on small, low-profit moves.
+      </div>
+
+      <h2>Evaluation Metrics</h2>
+      <p>Two metrics are tracked:</p>
+
+      <table class="compare-table">
+        <tr>
+          <th>Metric</th>
+          <th>Definition</th>
+          <th>Interpretation</th>
+        </tr>
+        <tr>
+          <td><strong>Accuracy</strong></td>
+          <td>Fraction of correct directional predictions</td>
+          <td>How often the model guesses the direction correctly</td>
+        </tr>
+        <tr>
+          <td><strong>Profit</strong></td>
+          <td>Product of cumulative price ratios, weighted by prediction</td>
+          <td>Annualized return if following the strategy live</td>
+        </tr>
+      </table>
+
+      <p>Profit is computed as:</p>
+      <pre><code>P(t) = ∏[1 if pred(i)=1 then C(i)/C(i-1)
+          else C(i-1)/C(i)]</code></pre>
+
+      <p>This formula captures buy-and-hold over 1 day, either long (if predicted up) or short (if predicted down).</p>
+    </div>
+
+    <!-- DATA & FEATURES -->
+    <div class="page" id="page-data">
+      <h1>Data & Features</h1>
+
+      <h2>Feature Categories</h2>
+      <p>Three primary data sources were combined:</p>
+
+      <div class="card">
+        <h3>Economic Indicators (USA & Euro Area)</h3>
+        <ul style="margin-left: 20px;">
+          <li>GDP (quarterly)</li>
+          <li>Composite PMI (monthly)</li>
+          <li>Consumer Price Index (monthly)</li>
+          <li>Inflation rate (CPI YoY)</li>
+          <li>Central bank interest rates</li>
+          <li>Current Account Balance (monthly)</li>
+        </ul>
+        <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">Forward-fill strategy: each day uses the most recent value, since traders see only published values, not real-time true values.</p>
+      </div>
+
+      <div class="card">
+        <h3>Market Indices (OHLCV)</h3>
+        <ul style="margin-left: 20px;">
+          <li>European: CAC40, DAX, STOXX50, STOXX600</li>
+          <li>American: DJI, NASDAQ Composite, NASDAQ100, Russell2000, S&P500</li>
+        </ul>
+        <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">Open, Close, High, Low, Volume for each.</p>
+      </div>
+
+      <div class="card">
+        <h3>Forex Pairs (OHLCV)</h3>
+        <ul style="margin-left: 20px;">
+          <li>13 pairs: AUD/USD, EUR/AUD, EUR/CAD, EUR/CHF, EUR/GBP, EUR/JPY, EUR/NZD, EUR/USD, GBP/USD, NZD/USD, USD/CAD, USD/CHF, USD/JPY</li>
+        </ul>
+      </div>
+
+      <h2>Data Transformations</h2>
+      <p>Feature distributions were non-normal, so transformations were applied:</p>
+
+      <table class="compare-table">
+        <tr>
+          <th>Feature Type</th>
+          <th>Transformation</th>
+          <th>Reason</th>
+        </tr>
+        <tr>
+          <td>CPI Year-over-Year</td>
+          <td>Log</td>
+          <td>Right-skewed distribution</td>
+        </tr>
+        <tr>
+          <td>Interest Rates</td>
+          <td>Square Root</td>
+          <td>Skewed volume patterns</td>
+        </tr>
+        <tr>
+          <td>Trading Volumes</td>
+          <td>Square Root</td>
+          <td>Heavy-tailed distribution</td>
+        </tr>
+      </table>
+
+      <h2>Three Dataset Representations</h2>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('dataset', 'ds1')">Dataset 1</button>
+        <button class="tab-btn" onclick="switchTab('dataset', 'ds2')">Dataset 2</button>
+        <button class="tab-btn" onclick="switchTab('dataset', 'ds3')">Dataset 3</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-ds1">
+        <div class="card">
+          <h3>Daily Features Only</h3>
+          <p>Current day's OHLCV for all market indices and forex pairs, plus current economic indicators. Minimal temporal context.</p>
+          <p><strong>Advantage:</strong> Low feature dimensionality, fast training.</p>
+          <p><strong>Disadvantage:</strong> Ignores short-term momentum and trending patterns.</p>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-ds2">
+        <div class="card">
+          <h3>Daily + Historical (90-day lookback)</h3>
+          <p>Current day plus preceding 90 days of OHLCV data. Captures short-term trends and seasonal patterns at a rolling 3-month window.</p>
+          <p><strong>Advantage:</strong> Captures momentum and mean-reversion patterns.</p>
+          <p><strong>Disadvantage:</strong> Feature explosion; requires careful regularization.</p>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-ds3">
+        <div class="card">
+          <h3>Technical Indicators</h3>
+          <p>Current day + 18 technical indicators derived from historical prices: moving averages (SMA, WMA), momentum oscillators (RSI, Stochastic), trend indicators (MACD), and volatility measures.</p>
+          <p><strong>Advantage:</strong> Domain-engineered features; captures market microstructure patterns traders use manually.</p>
+          <p><strong>Disadvantage:</strong> Hand-crafted features may overfit to specific market regimes.</p>
+          <p><strong>Result:</strong> Achieved highest accuracy across all model types.</p>
+        </div>
+      </div>
+
+      <h2>Date Encoding</h2>
+      <p>Temporal information is encoded differently by algorithm family:</p>
+
+      <table class="compare-table">
+        <tr>
+          <th>Model Type</th>
+          <th>Encoding</th>
+        </tr>
+        <tr>
+          <td>Tree-based (RF, XGB, etc.)</td>
+          <td>Ordinal: day (1-31), month (1-12), weekday (0-6)</td>
+        </tr>
+        <tr>
+          <td>Distance-based (SVM, KNN)</td>
+          <td>Cyclic: sin/cos for day, month, weekday</td>
+        </tr>
+      </table>
+
+      <p>Sine/cosine encoding ensures that day 31 and day 1 are close in feature space (cyclicity), important for non-tree models.</p>
+    </div>
+
+    <!-- ALGORITHMS -->
+    <div class="page" id="page-algorithms">
+      <h1>Machine Learning Algorithms</h1>
+
+      <p>21 distinct algorithms were evaluated, spanning linear models, distance-based, tree-based, and ensemble methods.</p>
+
+      <h2>Algorithm Families</h2>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('algo', 'linear')">Linear</button>
+        <button class="tab-btn" onclick="switchTab('algo', 'distance')">Distance</button>
+        <button class="tab-btn" onclick="switchTab('algo', 'trees')">Trees</button>
+        <button class="tab-btn" onclick="switchTab('algo', 'ensemble')">Ensemble</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-linear">
+        <div class="card">
+          <h3>Logistic Regression</h3>
+          <p>Baseline linear classifier. Learned a linear decision boundary in feature space.</p>
+          <p><strong>Result on dataset 2:</strong> 51.1% accuracy, 8.0% annual profit. Simple baseline; outperformed by complex models.</p>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-distance">
+        <div class="card">
+          <h3>K-Nearest Neighbors (KNN)</h3>
+          <p>Instance-based learner: classifies each sample by majority vote of its K nearest neighbors. Sensitive to feature scaling and dimensionality.</p>
+        </div>
+
+        <div class="card">
+          <h3>Support Vector Machine (SVM)</h3>
+          <p>Margin-maximizing hyperplane classifier. Tested with 4 kernels: linear, RBF (radial basis function), sigmoid, polynomial. RBF kernel did not generalize well (negative profit on multiple datasets), suggesting severe overfitting to training distribution.</p>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-trees">
+        <div class="card">
+          <h3>Decision Tree</h3>
+          <p>Recursive binary partitioning. Prone to overfitting without pruning, but allows feature importance inspection.</p>
+        </div>
+
+        <div class="card">
+          <h3>Bagging (Bootstrap Aggregating)</h3>
+          <p>Trains multiple models on random subsamples, averages predictions. Reduces variance. Applied to Decision Trees, Logistic Regression, KNN, and SVM variants.</p>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-ensemble">
+        <div class="card">
+          <h3>Gradient Boosting</h3>
+          <p>Sequential ensemble: each tree corrects residuals of the previous. Includes Histogram Gradient Boosting, XGBoost, LightGBM, CatBoost.</p>
+        </div>
+
+        <div class="card">
+          <h3>Random Forests & Extra Trees</h3>
+          <p>Parallel ensemble: average predictions from many deep trees trained on random subsets. Extra Trees adds randomness to split thresholds, often faster.</p>
+        </div>
+      </div>
+
+      <h2>Feature Scaling Strategy</h2>
+      <table class="compare-table">
+        <tr>
+          <th>Algorithm</th>
+          <th>Scaling</th>
+        </tr>
+        <tr>
+          <td>Logistic Regression, SVM, KNN</td>
+          <td>Standardization (zero mean, unit variance)</td>
+        </tr>
+        <tr>
+          <td>Tree-based models</td>
+          <td>Normalization (min-max to [0,1])</td>
+        </tr>
+        <tr>
+          <td>Before PCA</td>
+          <td>Mandatory standardization</td>
+        </tr>
+      </table>
+
+      <h2>Principal Component Analysis (PCA)</h2>
+      <p>Each algorithm was trained twice: once on raw features, once after PCA decorrelation (without dimension reduction).</p>
+
+      <div class="callout red">
+        <strong>Surprising finding:</strong> PCA harmed performance across the board. Highest PCA accuracy was 54.98% vs. 58.52% without PCA. Hypothesis: PCA linearizes the feature space, breaking temporal relationships encoded in raw features.
+      </div>
+
+      <p>This aligns with findings in other financial time-series work that non-linear feature relationships matter more than variance reduction.</p>
+    </div>
+
+    <!-- META-ESTIMATORS -->
+    <div class="page" id="page-meta">
+      <h1>Meta-Estimators & Stacking</h1>
+
+      <h2>What Are Meta-Estimators?</h2>
+      <p>A meta-estimator (or stacked model) trains a second-level model using predictions from multiple base models as features.</p>
+
+      <svg viewBox="0 0 700 300" style="margin: 20px 0;">
+        <rect x="20" y="20" width="80" height="60" fill="var(--bg3)" stroke="var(--accent)" stroke-width="2" rx="4"/>
+        <text x="60" y="55" font-size="12" fill="var(--text)" text-anchor="middle" font-weight="600">Dataset 1</text>
+
+        <rect x="20" y="110" width="80" height="60" fill="var(--bg3)" stroke="var(--accent)" stroke-width="2" rx="4"/>
+        <text x="60" y="145" font-size="12" fill="var(--text)" text-anchor="middle" font-weight="600">Dataset 2</text>
+
+        <rect x="20" y="200" width="80" height="60" fill="var(--bg3)" stroke="var(--accent)" stroke-width="2" rx="4"/>
+        <text x="60" y="235" font-size="12" fill="var(--text)" text-anchor="middle" font-weight="600">Dataset 3</text>
+
+        <line x1="100" y1="50" x2="140" y2="50" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <line x1="100" y1="140" x2="140" y2="140" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <line x1="100" y1="230" x2="140" y2="230" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+        <rect x="140" y="25" width="80" height="50" fill="var(--bg3)" stroke="var(--accent2)" stroke-width="2" rx="4"/>
+        <text x="180" y="52" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">SVM</text>
+
+        <rect x="140" y="115" width="80" height="50" fill="var(--bg3)" stroke="var(--accent2)" stroke-width="2" rx="4"/>
+        <text x="180" y="142" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">XGBoost</text>
+
+        <rect x="140" y="205" width="80" height="50" fill="var(--bg3)" stroke="var(--accent2)" stroke-width="2" rx="4"/>
+        <text x="180" y="232" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">KNN</text>
+
+        <line x1="220" y1="50" x2="280" y2="100" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <line x1="220" y1="140" x2="280" y2="130" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <line x1="220" y1="230" x2="280" y2="160" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+        <rect x="280" y="80" width="120" height="80" fill="var(--bg3)" stroke="var(--accent)" stroke-width="2" rx="4"/>
+        <text x="340" y="110" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Meta-Learner</text>
+        <text x="340" y="130" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">(e.g., SVM or</text>
+        <text x="340" y="145" font-size="11" fill="var(--text)" text-anchor="middle" font-weight="600">Decision Tree)</text>
+
+        <line x1="400" y1="120" x2="460" y2="120" stroke="var(--accent)" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+        <rect x="460" y="90" width="80" height="60" fill="var(--accent)" stroke="var(--accent)" stroke-width="2" rx="4"/>
+        <text x="500" y="125" font-size="12" fill="white" text-anchor="middle" font-weight="600">Prediction</text>
+
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+            <polygon points="0 0, 10 5, 0 10" fill="var(--accent)"/>
+          </marker>
+        </defs>
+      </svg>
+
+      <h2>Architecture</h2>
+      <p>The experiment used a three-stage stacking approach:</p>
+
+      <div class="steps">
+        <div class="step done">
+          <div class="step-circle">1</div>
+          <div class="step-label">Stage 1: Train 3 base models on different datasets</div>
+        </div>
+        <div class="step done">
+          <div class="step-circle">2</div>
+          <div class="step-label">Collect predictions from all 3</div>
+        </div>
+        <div class="step done">
+          <div class="step-circle">3</div>
+          <div class="step-label">Meta-learner trained on (original features + base predictions)</div>
+        </div>
+      </div>
+
+      <h2>Results on Meta-Estimators</h2>
+
+      <table class="compare-table">
+        <tr>
+          <th>Metric</th>
+          <th>Base Models</th>
+          <th>Meta-Estimators</th>
+        </tr>
+        <tr>
+          <td><strong>Max Accuracy</strong></td>
+          <td>58.52%</td>
+          <td>57.23%</td>
+        </tr>
+        <tr>
+          <td><strong>Best Profit</strong></td>
+          <td>29.54%</td>
+          <td><span class="badge-green">32.48%</span></td>
+        </tr>
+      </table>
+
+      <div class="callout">
+        <strong>Key observation:</strong> Meta-estimators slightly reduced accuracy but improved profit. The decision tree meta-estimator on dataset 3 combined base predictions to select large profitable moves even when base accuracy was moderate.
+      </div>
+
+      <h2>Why Stacking Helps Profit, Not Accuracy</h2>
+      <p>Base models on different feature sets capture different patterns. By learning how to weight their predictions, the meta-learner skips low-value trades (small price moves) and concentrates on high-variance scenarios. This trades slightly lower hit rate for higher profit per trade.</p>
+    </div>
+
+    <!-- PREPROCESSING -->
+    <div class="page" id="page-preprocessing">
+      <h1>Preprocessing & Hyperparameter Tuning</h1>
+
+      <h2>Cross-Validation Strategy</h2>
+      <p>Standard k-fold cross-validation biases financial forecasting by mixing past and future data. Instead, rolling-window (walk-forward) validation was used:</p>
+
+      <svg viewBox="0 0 700 250" style="margin: 20px 0;">
+        <text x="20" y="20" font-size="12" fill="var(--text-muted)" font-weight="600">2013/11/26 – 2019/12/31</text>
+        <rect x="20" y="30" width="200" height="30" fill="var(--green)" rx="4" opacity="0.7"/>
+        <text x="120" y="52" font-size="11" fill="white" text-anchor="middle" font-weight="600">Train</text>
+
+        <text x="250" y="20" font-size="12" fill="var(--text-muted)" font-weight="600">2020/01/01 – 2021/12/31</text>
+
+        <rect x="250" y="30" width="80" height="30" fill="var(--amber)" rx="4" opacity="0.7"/>
+        <text x="290" y="52" font-size="11" fill="white" text-anchor="middle" font-weight="600">Val 1</text>
+
+        <rect x="330" y="30" width="80" height="30" fill="var(--amber)" rx="4" opacity="0.7"/>
+        <text x="370" y="52" font-size="11" fill="white" text-anchor="middle" font-weight="600">Val 2</text>
+
+        <rect x="410" y="30" width="80" height="30" fill="var(--amber)" rx="4" opacity="0.7"/>
+        <text x="450" y="52" font-size="11" fill="white" text-anchor="middle" font-weight="600">Val 3</text>
+
+        <text x="20" y="90" font-size="12" fill="var(--text)" font-weight="600">Fold 1: Train on [2013-2019], evaluate on Jan 2020</text>
+        <text x="20" y="110" font-size="12" fill="var(--text)" font-weight="600">Fold 2: Train on [2013-2019 + Jan 2020], evaluate on Feb-Mar 2020</text>
+        <text x="20" y="130" font-size="12" fill="var(--text)" font-weight="600">... (8 folds total, 3-month validation windows)</text>
+        <text x="20" y="160" font-size="12" fill="var(--text)" font-weight="600">Final Test: Train on [2013-2021], evaluate on 2022</text>
+      </svg>
+
+      <p>This prevents data leakage: the model never sees future information when making predictions.</p>
+
+      <h2>Bayesian Hyperparameter Optimization</h2>
+      <p>Three sequential Bayesian searches were used, each informing the next:</p>
+
+      <table class="compare-table">
+        <tr>
+          <th>Search</th>
+          <th>Focus</th>
+          <th>Output</th>
+        </tr>
+        <tr>
+          <td><strong>Search 1</strong></td>
+          <td>Hyperparameters on full feature set</td>
+          <td>Good hyperparameters + full feature mask</td>
+        </tr>
+        <tr>
+          <td><strong>Search 2</strong></td>
+          <td>Hyperparameters + coarse feature selection</td>
+          <td>Refined hyperparameters + pruned features</td>
+        </tr>
+        <tr>
+          <td><strong>Search 3</strong></td>
+          <td>Hyperparameters + fine feature selection</td>
+          <td>Final model + optimal feature subset</td>
+        </tr>
+      </table>
+
+      <p>This cascading approach accelerates convergence: the third search benefits from good starting points, exploring a massive space more efficiently.</p>
+
+      <div class="callout">
+        <strong>Technique note:</strong> Knowledge transfer between sequential optimizers is non-trivial. Initial guesses matter enormously in high-dimensional spaces.
+      </div>
+
+      <h2>Optimization Criterion</h2>
+      <p>Accuracy was the criterion for all hyperparameter tuning and feature selection. This assumes accuracy correlates with profit—which the study found to be imperfect, but provides a stable objective for optimization.</p>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="page" id="page-results">
+      <h1>Performance & Results</h1>
+
+      <h2>Peak Performance</h2>
+      <div class="card-row">
+        <div class="card">
+          <div class="stat-val">58.52%</div>
+          <div class="stat-label">Best Accuracy</div>
+          <p style="margin-top: 12px; font-size: 13px;">Histogram Gradient Boosting on Dataset 3 (no PCA)</p>
+        </div>
+        <div class="card">
+          <div class="stat-val">32.48%</div>
+          <div class="stat-label">Best Profit</div>
+          <p style="margin-top: 12px; font-size: 13px;">Meta-estimator Decision Tree on Dataset 3</p>
+        </div>
+      </div>
+
+      <h2>Accuracy Rankings</h2>
+      <p>Accuracy distribution across 21 algorithms × 3 datasets × 2 PCA conditions (42 total configurations):</p>
+
+      <div class="chart-wrap">
+        <svg viewBox="0 0 700 300" style="margin: 20px 0;">
+          <text x="20" y="20" font-size="13" fill="var(--text)" font-weight="600">Distribution of Best Accuracies by Condition</text>
+
+          <g id="chart-bars">
+            <rect x="60" y="100" width="40" height="150" fill="var(--accent)" rx="2"/>
+            <text x="80" y="255" font-size="11" fill="var(--text-muted)" text-anchor="middle">No PCA</text>
+            <text x="80" y="75" font-size="12" fill="var(--accent)" font-weight="600" text-anchor="middle">58.5%</text>
+
+            <rect x="150" y="140" width="40" height="110" fill="var(--accent2)" rx="2"/>
+            <text x="170" y="255" font-size="11" fill="var(--text-muted)" text-anchor="middle">With PCA</text>
+            <text x="170" y="115" font-size="12" fill="var(--accent2)" font-weight="600" text-anchor="middle">55.0%</text>
+
+            <rect x="240" y="125" width="40" height="125" fill="var(--green)" rx="2"/>
+            <text x="260" y="255" font-size="11" fill="var(--text-muted)" text-anchor="middle">Meta-Est.</text>
+            <text x="260" y="100" font-size="12" fill="var(--green)" font-weight="600" text-anchor="middle">57.2%</text>
+          </g>
+
+          <line x1="40" y1="250" x2="350" y2="250" stroke="var(--border)" stroke-width="1"/>
+          <text x="35" y="270" font-size="11" fill="var(--text-muted)">50%</text>
+          <text x="315" y="270" font-size="11" fill="var(--text-muted)">60%</text>
+        </svg>
+      </div>
+
+      <h2>Dataset Performance</h2>
+      <p>How each dataset representation performed:</p>
+
+      <table class="compare-table">
+        <tr>
+          <th>Dataset</th>
+          <th>Description</th>
+          <th>Peak Accuracy</th>
+          <th>Best Model</th>
+        </tr>
+        <tr>
+          <td><strong>Dataset 1</strong></td>
+          <td>Daily features only</td>
+          <td>55.9%</td>
+          <td>Decision Tree</td>
+        </tr>
+        <tr>
+          <td><strong>Dataset 2</strong></td>
+          <td>Daily + 90-day history</td>
+          <td>56.5%</td>
+          <td>Decision Tree</td>
+        </tr>
+        <tr>
+          <td><strong>Dataset 3</strong></td>
+          <td>Technical indicators</td>
+          <td><span class="badge-green">58.5%</span></td>
+          <td>Histogram Gradient Boosting</td>
+        </tr>
+      </table>
+
+      <div class="callout green">
+        <strong>Key insight:</strong> Domain-engineered technical indicators outperformed raw price history by 2-3%. Feature engineering informed by trader domain knowledge wins.
+      </div>
+
+      <h2>Accuracy vs. Profit Decoupling</h2>
+      <p>Two models from dataset 3 highlight the accuracy-profit trade-off:</p>
+
+      <table class="compare-table">
+        <tr>
+          <th>Model</th>
+          <th>Accuracy</th>
+          <th>Profit</th>
+        </tr>
+        <tr>
+          <td>Meta Decision Tree</td>
+          <td>55.31%</td>
+          <td><span class="badge-green">32.48%</span></td>
+        </tr>
+        <tr>
+          <td>Meta SVM (polynomial)</td>
+          <td>55.63%</td>
+          <td>4.25%</td>
+        </tr>
+      </table>
+
+      <p>The SVM has higher accuracy but lower profit. Analysis reveals: the SVM succeeds on many small, low-profit trades and fails on large, high-profit moves. The decision tree concentrates on high-volatility moves where correct predictions compound.</p>
+
+      <svg viewBox="0 0 700 350" style="margin: 20px 0;">
+        <text x="20" y="20" font-size="13" fill="var(--text)" font-weight="600">Daily Return Distribution: Two Models</text>
+
+        <text x="60" y="60" font-size="11" fill="var(--text)" font-weight="600">Decision Tree (mean = high, median = high)</text>
+        <circle cx="120" cy="100" r="3" fill="var(--green)" opacity="0.6"/>
+        <circle cx="180" cy="110" r="5" fill="var(--green)" opacity="0.5"/>
+        <circle cx="240" cy="95" r="4" fill="var(--green)" opacity="0.6"/>
+        <circle cx="300" cy="115" r="6" fill="var(--green)" opacity="0.4"/>
+        <circle cx="360" cy="100" r="3" fill="var(--green)" opacity="0.6"/>
+
+        <text x="60" y="180" font-size="11" fill="var(--text)" font-weight="600">SVM (mean = low, median = high)</text>
+        <circle cx="100" cy="220" r="2" fill="var(--accent)" opacity="0.4"/>
+        <circle cx="160" cy="200" r="8" fill="var(--accent)" opacity="0.6"/>
+        <circle cx="220" cy="210" r="7" fill="var(--accent)" opacity="0.5"/>
+        <circle cx="280" cy="205" r="9" fill="var(--accent)" opacity="0.4"/>
+        <circle cx="340" cy="195" r="6" fill="var(--accent)" opacity="0.5"/>
+        <line x1="60" y1="320" x2="400" y2="320" stroke="var(--border)" stroke-width="1"/>
+        <text x="55" y="340" font-size="10" fill="var(--text-muted)">Loss</text>
+        <text x="380" y="340" font-size="10" fill="var(--text-muted)">Profit</text>
+      </svg>
+
+      <h2>2022 Trading Performance</h2>
+      <p>The meta-estimator decision tree traded throughout 2022, accumulating a 32.48% annual return. The profit curve shows steady growth with drawdowns during high-volatility periods (March, June, September).</p>
+    </div>
+
+    <!-- KEY INSIGHTS -->
+    <div class="page" id="page-insights">
+      <h1>Key Insights</h1>
+
+      <h2>1. Feature Engineering Dominates</h2>
+      <div class="card">
+        <p><strong>Finding:</strong> Dataset 3 (technical indicators) outperformed raw features by 2-3% accuracy across all algorithms.</p>
+        <p><strong>Implication:</strong> In financial prediction, domain knowledge matters more than model complexity. Traders' manually-crafted indicators (RSI, MACD, moving averages) encode market microstructure that models can leverage.</p>
+        <p><strong>Actionable:</strong> Feature engineering should incorporate domain expertise first; algorithmic feature selection comes second.</p>
+      </div>
+
+      <h2>2. PCA Harms Time-Series Prediction</h2>
+      <div class="card">
+        <p><strong>Finding:</strong> Decorrelating features via PCA reduced accuracy from 58.52% to 54.98%.</p>
+        <p><strong>Hypothesis:</strong> PCA linearizes the feature space, destroying temporal dependencies. Forex prices have non-linear momentum and mean-reversion cycles that linear transformations obscure.</p>
+        <p><strong>Implication:</strong> Dimensionality reduction via variance-based methods may not suit financial time series. Non-linear manifold learning or temporal autoencoders could be better.</p>
+      </div>
+
+      <h2>3. Accuracy ≠ Profit</h2>
+      <div class="card">
+        <p><strong>Finding:</strong> A 55% accurate model outperformed a 57% accurate model in profit.</p>
+        <p><strong>Root cause:</strong> The 55% model captured high-volatility moves (large swings) more often, while the 57% model won many small trades.</p>
+        <p><strong>Implication:</strong> Optimizing solely for accuracy leads to suboptimal profit. Trading systems should optimize for: (accuracy × expected move size).</p>
+      </div>
+
+      <h2>4. Stacking Improves Profit, Not Accuracy</h2>
+      <div class="card">
+        <p><strong>Finding:</strong> Meta-estimators achieved 57.23% accuracy (lower than base models' 58.52%) but 32.48% profit (higher than base models' 29.54%).</p>
+        <p><strong>Explanation:</strong> The meta-learner learns to ignore low-confidence or low-profit predictions from base models. It becomes selective, trading fewer times but more profitably.</p>
+        <p><strong>Implication:</strong> Stacking works for trading because it optimizes the right metric: profit per unit risk, not raw hit rate.</p>
+      </div>
+
+      <h2>5. Economic Indicators Have Limited Predictive Power at Daily Horizon</h2>
+      <div class="card">
+        <p><strong>Finding:</strong> Inclusion of GDP, CPI, interest rates did not dramatically improve accuracy beyond market indices alone.</p>
+        <p><strong>Reason:</strong> Macro indicators are released irregularly and move markets in seconds when published. By midnight (when models make daily predictions), the shock has dissipated.</p>
+        <p><strong>Implication:</strong> For daily predictions, market prices embed macro information faster than econometric models can exploit it. Higher-frequency (hourly/minute) prediction could better capture announcement effects.</p>
+      </div>
+
+      <h2>6. Tree-Based Models Outperform Distance-Based</h2>
+      <div class="card">
+        <p><strong>Finding:</strong> Gradient boosting (XGBoost, LightGBM, Histogram GB) and Random Forests consistently outperformed SVM and KNN.</p>
+        <p><strong>Reason:</strong> Trees automatically detect non-linear interactions (e.g., RSI > 70 AND volatility > threshold = strong signal). Distance-based models struggle in high-dimensional spaces.</p>
+        <p><strong>Implication:</strong> For feature-rich financial datasets, ensemble tree methods are the pragmatic choice.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <div class="callout amber">
+        <strong>Best practice recipe:</strong> Use domain-engineered features → train with ensemble tree methods → optimize for profit, not accuracy → combine via stacking for selective, high-conviction trades.
+      </div>
+    </div>
+
+    <!-- LIMITATIONS -->
+    <div class="page" id="page-limitations">
+      <h1>Limitations & Future Work</h1>
+
+      <h2>Current Limitations</h2>
+
+      <h3>Economic Indicators Timing</h3>
+      <div class="card">
+        <p>Economic indicators (GDP, CPI, interest rates) are used at midnight valuation, but they are actually released throughout the trading day. When a major indicator is released (e.g., U.S. jobs report at 8:30 AM), volatility spikes and moves happen within seconds.</p>
+        <p><strong>Impact:</strong> Models cannot capture intraday shocks, limiting predictive power for daily direction on announcement days.</p>
+      </div>
+
+      <h3>Fixed Prediction Horizon</h3>
+      <div class="card">
+        <p>The approach predicts exactly 1 day ahead. Very short-term traders (intraday) need minute-level predictions; longer-term investors need week/month horizons.</p>
+        <p><strong>Gap:</strong> 1-day horizon may be suboptimal for both strategies.</p>
+      </div>
+
+      <h3>No Slippage or Transaction Costs</h3>
+      <div class="card">
+        <p>Profit calculations assume perfect execution at the bid/ask close without slippage, commissions, or spreads.</p>
+        <p><strong>Reality:</strong> In live trading, spreads (typically 1-2 pips for EUR/USD) and commissions would reduce 32.48% annual return by several percentage points.</p>
+      </div>
+
+      <h3>Stationarity Assumption</h3>
+      <div class="card">
+        <p>The model assumes market statistics (mean, variance, correlations) are stable across 2013-2022. Central bank policy shifts, Brexit, pandemic events, and geopolitical shocks fundamentally alter market behavior.</p>
+        <p><strong>Implication:</strong> Models trained on 2015-2019 data may not generalize to 2022 without retraining.</p>
+      </div>
+
+      <h2>Future Work</h2>
+
+      <h3>Intraday Prediction</h3>
+      <p>Refine predictions to hourly or minute resolution. Capture announcement-driven volatility spikes. Requires minute-level OHLCV data and real-time economic calendars.</p>
+
+      <h3>Ensemble of Prediction Horizons</h3>
+      <p>Train separate models for 1-day, 5-day, and 20-day ahead predictions. Combine them via meta-learner that selects the best-consensus prediction.</p>
+
+      <h3>Attention-Based Architecture</h3>
+      <p>Replace hand-crafted technical indicators with learned attention mechanisms (Transformers). Allow the model to discover which historical windows matter most dynamically.</p>
+
+      <h3>Regime-Switching Models</h3>
+      <p>Detect market regimes (trending, ranging, high volatility, low volatility) and train separate sub-models for each. Route predictions through the appropriate regime model.</p>
+
+      <h3>Causal Feature Discovery</h3>
+      <p>Instead of optimizing via Bayesian search, use causal inference (Causal Forest, SHAP) to identify which features causally influence EUR/USD direction, filtering out spurious correlations.</p>
+
+      <h3>Multi-Task Learning</h3>
+      <p>Jointly predict direction AND volatility, AND return magnitude. Shared representations may improve generalization beyond binary classification.</p>
+
+      <h2>Conclusion</h2>
+      <div class="callout green">
+        <strong>Takeaway:</strong> Binary direction prediction is solvable at 58%+ accuracy with off-the-shelf ML, but translating accuracy to profit requires careful attention to feature engineering, metric selection, and ensemble design. The gap between accuracy and trading returns highlights why most retail traders fail—optimizing the wrong objective.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const theme = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', theme);
+      document.getElementById('theme-btn').textContent = theme === 'dark' ? '◐' : '◑';
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const main = document.getElementById('main');
+      const isHidden = sidebar.classList.contains('hidden');
+
+      if (window.innerWidth > 700) {
+        sidebar.classList.toggle('hidden');
+        main.classList.toggle('expanded');
+      } else {
+        sidebar.classList.toggle('visible');
+      }
+    }
+
+    function showPage(id) {
+      const pages = document.querySelectorAll('.page');
+      pages.forEach(p => p.classList.remove('active'));
+      document.getElementById(`page-${id}`).classList.add('active');
+
+      const links = document.querySelectorAll('.nav-link');
+      links.forEach(l => l.classList.remove('active'));
+      event.target.classList.add('active');
+
+      window.scrollTo(0, 0);
+    }
+
+    function switchTab(group, panelId) {
+      const buttons = document.querySelectorAll(`.tab-btn`);
+      const panels = document.querySelectorAll(`.tab-panel`);
+
+      buttons.forEach((btn, idx) => {
+        if (btn.parentElement.id === group || !btn.parentElement.id) {
+          btn.classList.remove('active');
+        }
+      });
+
+      panels.forEach(panel => {
+        if (panel.id === `tab-${panelId}`) {
+          panel.classList.add('active');
+        } else {
+          panel.classList.remove('active');
+        }
+      });
+
+      event.target.classList.add('active');
+    }
+
+    window.addEventListener('resize', () => {
+      const sidebar = document.getElementById('sidebar');
+      if (window.innerWidth > 700) {
+        sidebar.classList.remove('visible');
+      }
+    });
+
+    window.addEventListener('load', () => {
+      document.getElementById('page-overview').classList.add('active');
+      document.querySelector('.nav-link').classList.add('active');
+    });
+  </script>
+</body>
+</html>
