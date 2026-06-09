@@ -60,6 +60,27 @@
             margin-top: 10px;
             margin-right: 4px;
         }
+        .file-list {
+            margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .file-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #58a6ff;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+        .file-link:hover { border-color: #58a6ff; }
+        .file-icon { font-size: 1rem; }
         footer {
             margin-top: 60px;
             color: #484f58;
@@ -94,11 +115,30 @@
         <div class="card">
             <h2>Références</h2>
             <p>Analyse de prédiction EUR/USD Forex et autres études de cas de machine learning appliqué.</p>
-            <span class="badge">Forex</span>
-            <span class="badge">Time Series</span>
+            <div class="file-list">
+                <a class="file-link" href="References/eurusd-forex-prediction.html" target="_blank">
+                    <span class="file-icon">&#128196;</span> eurusd-forex-prediction.html
+                </a>
+                <a class="file-link" href="References/predict eurusd.pdf" target="_blank">
+                    <span class="file-icon">&#128196;</span> predict eurusd.pdf
+                </a>
+            </div>
         </div>
+    <!-- AUTO-FOLDERS-START -->
+        <div class="card" id="folder-References">
+            <h2>Références</h2>
+            <div class="file-list">
+                <a class="file-link" href="References/eurusd-forex-prediction.html" target="_blank">
+                    <span class="file-icon">&#128196;</span> eurusd-forex-prediction.html
+                </a>
+                <a class="file-link" href="References/predict eurusd.pdf" target="_blank">
+                    <span class="file-icon">&#128196;</span> predict eurusd.pdf
+                </a>
+            </div>
+        </div>
+        <!-- AUTO-FOLDERS-END -->
     </div>
 
-    <footer>branch_lee — ML_prediction_project — last push: 2026-06-09 16:59</footer>
+    <footer>branch_lee — ML_prediction_project — last push: 2026-06-09 17:02</footer>
 </body>
 </html>
