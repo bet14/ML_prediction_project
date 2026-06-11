@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Predict GBP/USD Direction — Project Plan</title>
+<style>
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --sidebar-w: 260px;
+  --transition: 0.25s ease;
+}
+[data-theme="dark"] {
+  --bg: #050505;
+  --bg2: #121212;
+  --bg3: #1e1e1e;
+  --border: #333333;
+  --text: #fafafa;
+  --text-muted: #a0a0a0;
+  --accent: #4a9eff;
+  --accent2: #9d7eff;
+  --green: #1abc9c;
+  --amber: #f39c12;
+  --red: #e74c3c;
+  --tab-active-bg: #4a9eff;
+  --tab-active-text: #050505;
+  --chart-grid: rgba(255,255,255,0.04);
+}
+[data-theme="light"] {
+  --bg: #f0f2f8;
+  --bg2: #ffffff;
+  --bg3: #e8ecf4;
+  --border: #d0d5e8;
+  --text: #0d1117;
+  --text-muted: #4b5563;
+  --accent: #4361ee;
+  --accent2: #7c3aed;
+  --green: #059669;
+  --amber: #d97706;
+  --red: #dc2626;
+  --tab-active-bg: #4361ee;
+  --tab-active-text: #fff;
+  --chart-grid: rgba(0,0,0,0.08);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; transition: background var(--transition), color var(--transition); }
+
+/* TOPBAR */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 52px;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 18px; gap: 14px; z-index: 100;
+}
+#topbar h1 { font-size: 15px; font-weight: 600; }
+#topbar h1 span { color: var(--accent); }
+#topbar .spacer { flex: 1; }
+#toggle-sidebar-btn, #theme-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  border-radius: 6px; padding: 5px 11px; cursor: pointer; font-size: 13px;
+  transition: background var(--transition);
+}
+#toggle-sidebar-btn:hover, #theme-btn:hover { background: var(--border); }
+
+/* SIDEBAR */
+#sidebar {
+  position: fixed; top: 52px; left: 0; bottom: 0; width: var(--sidebar-w);
+  background: var(--bg2); border-right: 1px solid var(--border);
+  overflow-y: auto; transition: transform var(--transition); z-index: 90;
+  padding: 16px 0 40px;
+}
+#sidebar.hidden { transform: translateX(calc(-1 * var(--sidebar-w))); }
+.sidebar-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted); padding: 14px 18px 6px;
+}
+.nav-link {
+  display: block; padding: 8px 18px; font-size: 13px; color: var(--text-muted);
+  cursor: pointer; border-left: 3px solid transparent;
+  transition: all var(--transition); text-decoration: none;
+}
+.nav-link:hover { color: var(--text); background: var(--bg3); }
+.nav-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--bg3); font-weight: 600; }
+
+/* MAIN */
+#main {
+  margin-left: var(--sidebar-w); padding-top: 52px;
+  transition: margin-left var(--transition);
+}
+#main.expanded { margin-left: 0; }
+.content-wrap { max-width: 900px; margin: 0 auto; padding: 36px 48px 80px; }
+
+/* PAGE */
+.page { display: none; }
+.page.active { display: block; animation: fadein 0.25s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+h2 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; color: var(--text); }
+p { color: var(--text-muted); margin-bottom: 12px; line-height: 1.7; }
+.page-subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; }
+
+/* CARDS */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
+.card-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.card-row .card { flex: 1; min-width: 180px; }
+.stat-val { font-size: 28px; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* CALLOUT */
+.callout { border-left: 3px solid var(--accent); background: var(--bg3); border-radius: 0 var(--radius) var(--radius) 0; padding: 14px 18px; margin: 16px 0; font-size: 14px; color: var(--text); }
+.callout.green { border-left-color: var(--green); }
+.callout.amber { border-left-color: var(--amber); }
+.callout.red { border-left-color: var(--red); }
+.callout strong { display: block; margin-bottom: 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+
+/* STEPS */
+.steps { display: flex; gap: 0; margin: 24px 0; flex-wrap: wrap; }
+.step {
+  flex: 1; min-width: 100px; text-align: center; position: relative; cursor: pointer;
+  padding-bottom: 10px;
+}
+.step::after {
+  content: ''; position: absolute; top: 14px; left: 50%; width: 100%;
+  height: 2px; background: var(--border); z-index: 0;
+}
+.step:last-child::after { display: none; }
+.step-circle {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg3); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; margin: 0 auto 8px; position: relative; z-index: 1;
+  transition: all var(--transition);
+}
+.step.done .step-circle { background: var(--accent); border-color: var(--accent); color: var(--tab-active-text); }
+.step-label { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+.step.done .step-label { color: var(--accent); }
+
+/* TABLE */
+.compare-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.compare-table th { background: var(--bg3); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.compare-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
+.compare-table tr:hover td { background: var(--bg3); }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+.badge-green { background: rgba(26,188,156,0.15); color: var(--green); }
+.badge-amber { background: rgba(243,156,18,0.15); color: var(--amber); }
+.badge-red { background: rgba(231,76,60,0.15); color: var(--red); }
+.badge-accent { background: rgba(74,158,255,0.15); color: var(--accent); }
+.badge-purple { background: rgba(157,126,255,0.15); color: var(--accent2); }
+
+/* PROGRESS */
+.progress-wrap { margin: 10px 0; }
+.progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+.progress-bar { height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width 0.8s ease; }
+
+/* CHART WRAP */
+.chart-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 16px 0; }
+.chart-title { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* SVG BAR CHART */
+.bar-chart { width: 100%; }
+.bar-rect { transition: opacity 0.2s; }
+.bar-rect:hover { opacity: 0.8; }
+
+/* CODE */
+pre {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; font-family: var(--font-mono); font-size: 12.5px;
+  overflow-x: auto; color: var(--text); margin: 12px 0; line-height: 1.6;
+}
+code { font-family: var(--font-mono); font-size: 12.5px; background: var(--bg3); padding: 1px 5px; border-radius: 4px; }
+
+/* DIVIDER */
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+/* PIPELINE DIAGRAM */
+.pipeline { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
+.pipe-stage {
+  display: flex; align-items: flex-start; gap: 16px; padding: 16px 20px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 4px; position: relative;
+}
+.pipe-num {
+  min-width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent); color: var(--tab-active-text);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; flex-shrink: 0;
+}
+.pipe-content { flex: 1; }
+.pipe-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.pipe-desc { font-size: 13px; color: var(--text-muted); }
+.pipe-arrow { text-align: center; color: var(--border); font-size: 18px; padding: 2px 0; }
+
+/* MOBILE */
+@media (max-width: 700px) {
+  #sidebar { transform: translateX(calc(-1 * var(--sidebar-w))); }
+  #sidebar.visible { transform: translateX(0); }
+  #main { margin-left: 0; }
+  .content-wrap { padding: 24px 18px 60px; }
+  .card-row { flex-direction: column; }
+  .steps { gap: 8px; }
+  .step::after { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <button id="toggle-sidebar-btn" onclick="toggleSidebar()">Menu</button>
+  <h1>Predict <span>GBP/USD</span> Direction — Project Plan</h1>
+  <div class="spacer"></div>
+  <button id="theme-btn" onclick="toggleTheme()">Light</button>
+</div>
+
+<div id="sidebar">
+  <div class="sidebar-label">Project Plan</div>
+  <a class="nav-link active" onclick="showPage('overview')">Overview</a>
+  <a class="nav-link" onclick="showPage('research')">Related Research</a>
+  <a class="nav-link" onclick="showPage('data')">Data Sources</a>
+  <a class="nav-link" onclick="showPage('preprocessing')">Preprocessing</a>
+  <a class="nav-link" onclick="showPage('models')">ML Models</a>
+  <a class="nav-link" onclick="showPage('evaluation')">Evaluation</a>
+</div>
+
+<div id="main">
+<div class="content-wrap">
+
+<!-- PAGE: OVERVIEW -->
+<div class="page active" id="page-overview">
+  <h2>Predicting GBP/USD Daily Direction</h2>
+  <p class="page-subtitle">A machine learning classification project — binary prediction of next-day close price movement</p>
+
+  <div class="card-row">
+    <div class="card">
+      <div class="stat-val">~58%</div>
+      <div class="stat-label">Target directional accuracy (EUR/USD baseline, Guyard 2024)</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">32%</div>
+      <div class="stat-label">Annual return achieved by best meta-estimator (EUR/USD baseline)</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">~2,500</div>
+      <div class="stat-label">Daily samples in a 10-year dataset</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">21+</div>
+      <div class="stat-label">ML models evaluated across dataset variants</div>
+    </div>
+  </div>
+
+  <h3>Problem Definition</h3>
+  <div class="callout">
+    <strong>Target Variable</strong>
+    Direction(t) = 1 if close(t+1) &gt; close(t), else 0 — Binary classification on daily GBP/USD bid close price
+  </div>
+
+  <p>The GBP/USD pair is one of the most liquid and traded currency pairs globally. Unlike EUR/USD, it carries additional volatility drivers: BoE monetary policy divergence from the Fed, UK political events (Brexit aftermath, trade agreements), and GBP's role as a risk-sentiment proxy. The methodology from Guyard &amp; Deriaz (2024) on EUR/USD is directly transferable with key adaptations for UK-specific macroeconomic indicators.</p>
+
+  <h3>Full Project Pipeline</h3>
+  <div class="pipeline">
+    <div class="pipe-stage">
+      <div class="pipe-num">1</div>
+      <div class="pipe-content">
+        <div class="pipe-title">Data Collection</div>
+        <div class="pipe-desc">GBP/USD OHLCV from Dukascopy, UK/US macro indicators (BoE, ONS, FRED), correlated Forex pairs, equity indices (FTSE100, S&P500, DAX)</div>
+      </div>
+    </div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-stage">
+      <div class="pipe-num">2</div>
+      <div class="pipe-content">
+        <div class="pipe-title">Preprocessing &amp; Feature Engineering</div>
+        <div class="pipe-desc">Target label construction, data transformations (log/sqrt), three dataset variants (basic / lookback / technical indicators), date encoding</div>
+      </div>
+    </div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-stage">
+      <div class="pipe-num">3</div>
+      <div class="pipe-content">
+        <div class="pipe-title">Model Training &amp; Hyperparameter Search</div>
+        <div class="pipe-desc">21 ML algorithms, with/without PCA decorrelation, meta-estimator stacking, 3-stage Bayesian Search, 8-fold rolling cross-validation</div>
+      </div>
+    </div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-stage">
+      <div class="pipe-num">4</div>
+      <div class="pipe-content">
+        <div class="pipe-title">Evaluation</div>
+        <div class="pipe-desc">Directional accuracy + cumulative profit metric on held-out test year, monthly rolling re-training</div>
+      </div>
+    </div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-stage">
+      <div class="pipe-num">5</div>
+      <div class="pipe-content">
+        <div class="pipe-title">Interface (Streamlit)</div>
+        <div class="pipe-desc">Interactive UI: input today's features, get next-day direction prediction with confidence score and cumulative return chart</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout amber">
+    <strong>GBP/USD vs EUR/USD — Key Differences</strong>
+    GBP/USD has higher average daily volatility (~0.6% vs ~0.4%), a stronger sensitivity to UK political events, and the BoE rate decisions carry disproportionate weight. The EUR/USD methodology applies directly but UK-specific indicators (BoE rate, UK CPI, UK PMI, UK current account) must replace or supplement EA indicators.
+  </div>
+
+  <h3>Timeline</h3>
+  <div class="steps" id="steps-timeline">
+    <div class="step done" onclick="markSteps('steps-timeline',1)">
+      <div class="step-circle">1</div>
+      <div class="step-label">Literature<br/>Review</div>
+    </div>
+    <div class="step" onclick="markSteps('steps-timeline',2)">
+      <div class="step-circle">2</div>
+      <div class="step-label">Data<br/>Collection</div>
+    </div>
+    <div class="step" onclick="markSteps('steps-timeline',3)">
+      <div class="step-circle">3</div>
+      <div class="step-label">Preprocessing<br/>&amp; EDA</div>
+    </div>
+    <div class="step" onclick="markSteps('steps-timeline',4)">
+      <div class="step-circle">4</div>
+      <div class="step-label">Model<br/>Training</div>
+    </div>
+    <div class="step" onclick="markSteps('steps-timeline',5)">
+      <div class="step-circle">5</div>
+      <div class="step-label">Evaluation<br/>&amp; Selection</div>
+    </div>
+    <div class="step" onclick="markSteps('steps-timeline',6)">
+      <div class="step-circle">6</div>
+      <div class="step-label">Streamlit<br/>Demo</div>
+    </div>
+    <div class="step" onclick="markSteps('steps-timeline',7)">
+      <div class="step-circle">7</div>
+      <div class="step-label">Presentation<br/>27/06</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: RESEARCH -->
+<div class="page" id="page-research">
+  <h2>Related Research</h2>
+  <p class="page-subtitle">Key papers directly relevant to Forex direction prediction on GBP/USD and adjacent pairs</p>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Authors</th>
+        <th>Pair(s)</th>
+        <th>Models</th>
+        <th>Best Accuracy</th>
+        <th>Key Contribution</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Guyard &amp; Deriaz (2024)</strong><br/><span style="color:var(--text-muted);font-size:12px">MLMI, Osaka</span></td>
+        <td><span class="badge badge-accent">EUR/USD</span></td>
+        <td>21 ML models + meta-estimators + PCA</td>
+        <td><span class="badge badge-green">58.52%</span><br/>32.48% annual return</td>
+        <td>Bayesian hyperparameter search, 3 dataset variants, economic indicator integration, meta-stacking</td>
+      </tr>
+      <tr>
+        <td><strong>Galeshchuk &amp; Mukherjee (2017)</strong><br/><span style="color:var(--text-muted);font-size:12px">ISAFM, vol.24</span></td>
+        <td><span class="badge badge-accent">EUR/USD</span> <span class="badge badge-purple">GBP/USD</span> <span class="badge badge-amber">JPY/USD</span></td>
+        <td>CNN vs. LSTM vs. MLP</td>
+        <td><span class="badge badge-green">CNN best</span></td>
+        <td>First demonstration that CNN outperforms LSTM on Forex direction; directly tested GBP/USD</td>
+      </tr>
+      <tr>
+        <td><strong>Yildirim et al. (2021)</strong><br/><span style="color:var(--text-muted);font-size:12px">Financial Innovation</span></td>
+        <td><span class="badge badge-accent">EUR/USD</span></td>
+        <td>LSTM + macroeconomic indicators</td>
+        <td><span class="badge badge-amber">~55%</span></td>
+        <td>Macro indicators (interest rate, inflation, DAX, S&P500) significantly improve LSTM accuracy</td>
+      </tr>
+      <tr>
+        <td><strong>Ghazali et al. (2009)</strong><br/><span style="color:var(--text-muted);font-size:12px">Neurocomputing</span></td>
+        <td><span class="badge badge-purple">GBP/USD</span> <span class="badge badge-accent">EUR/USD</span> <span class="badge badge-amber">EUR/JPY</span></td>
+        <td>MLP, PSNN, RPNN, DRPNN</td>
+        <td><span class="badge badge-green">DRPNN best (NMSE)</span></td>
+        <td>Dynamic Ridge Polynomial NN on GBP/USD; profit-driven evaluation on non-stationary series</td>
+      </tr>
+      <tr>
+        <td><strong>Majhi et al. (2009)</strong><br/><span style="color:var(--text-muted);font-size:12px">Expert Systems with Applications</span></td>
+        <td><span class="badge badge-purple">GBP/USD</span> <span class="badge badge-amber">JPY/USD</span> <span class="badge badge-accent">USD/INR</span></td>
+        <td>FLANN, CFLANN</td>
+        <td><span class="badge badge-green">Good 3-month ahead</span></td>
+        <td>Lightweight neural networks achieving multi-step ahead GBP/USD forecasts with fast computation</td>
+      </tr>
+      <tr>
+        <td><strong>Fischer &amp; Krauss (2018)</strong><br/><span style="color:var(--text-muted);font-size:12px">European J. of Operational Research</span></td>
+        <td><span class="badge badge-amber">S&P500</span></td>
+        <td>LSTM vs. RF vs. DNN vs. Logistic Regression</td>
+        <td><span class="badge badge-green">LSTM best</span></td>
+        <td>LSTM surpasses tree-based methods on large samples; relevant baseline for model comparison strategy</td>
+      </tr>
+      <tr>
+        <td><strong>Zhong &amp; Enke (2019)</strong><br/><span style="color:var(--text-muted);font-size:12px">Financial Innovation</span></td>
+        <td><span class="badge badge-amber">S&P500 ETF</span></td>
+        <td>DNN with/without PCA</td>
+        <td><span class="badge badge-green">PCA improves DNN</span></td>
+        <td>PCA on input features improves deep network performance — validated and adapted in Guyard 2024</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>GBP/USD — Specific Considerations</h3>
+  <div class="callout green">
+    <strong>Why GBP/USD behaves differently</strong>
+    GBP/USD (Cable) is the 3rd most traded pair globally. Its dynamics are driven by BoE vs Fed divergence, UK political risk (trade policy, fiscal events), and the strong historical negative correlation with USD strength (DXY). Post-Brexit, UK CPI and labour market data have gained outsized market sensitivity.
+  </div>
+
+  <div class="callout amber">
+    <strong>Literature Gap — Opportunity</strong>
+    Most papers on GBP/USD direction use narrow 3-5 year windows with only historical price data. Integrating UK macro indicators (BoE rate, UK PMI, UK current account) as done by Guyard et al. for EA indicators, over a 10+ year horizon, is underexplored and constitutes a differentiator for this project.
+  </div>
+
+  <hr/>
+  <h3>References (APA 7th)</h3>
+  <div class="card" style="font-size:13px;line-height:1.9;">
+    <p>Guyard, K. C., &amp; Deriaz, M. (2024). Predicting foreign exchange EURUSD direction using machine learning. In <em>Proceedings of the 7th International Conference on Machine Learning and Machine Intelligence (MLMI 2024)</em> (pp. 1–9). ACM. <a href="https://doi.org/10.1145/3696271.3696272" target="_blank" style="color:var(--accent)">https://doi.org/10.1145/3696271.3696272</a></p>
+
+    <p>Galeshchuk, S., &amp; Mukherjee, S. (2017). Deep networks for predicting direction of change in foreign exchange rates. <em>Intelligent Systems in Accounting, Finance and Management, 24</em>(4), 100–110. <a href="https://doi.org/10.1002/isaf.1404" target="_blank" style="color:var(--accent)">https://doi.org/10.1002/isaf.1404</a></p>
+
+    <p>Yildirim, D. C., Toroslu, I. H., &amp; Fiore, U. (2021). Forecasting directional movement of Forex data using LSTM with technical and macroeconomic indicators. <em>Financial Innovation, 7</em>(1), 1–36. <a href="https://doi.org/10.1186/s40854-020-00220-2" target="_blank" style="color:var(--accent)">https://doi.org/10.1186/s40854-020-00220-2</a></p>
+
+    <p>Ghazali, R., Hussain, A. J., Nawi, N. M., &amp; Mohamad, B. (2009). Non-stationary and stationary prediction of financial time series using dynamic ridge polynomial neural network. <em>Neurocomputing, 72</em>(10–12), 2359–2367. <a href="https://doi.org/10.1016/j.neucom.2008.12.005" target="_blank" style="color:var(--accent)">https://doi.org/10.1016/j.neucom.2008.12.005</a></p>
+
+    <p>Majhi, R., Panda, G., &amp; Sahoo, G. (2009). Efficient prediction of exchange rates with low complexity artificial neural network models. <em>Expert Systems with Applications, 36</em>(1), 181–189. <a href="https://doi.org/10.1016/j.eswa.2007.09.005" target="_blank" style="color:var(--accent)">https://doi.org/10.1016/j.eswa.2007.09.005</a></p>
+
+    <p>Fischer, T., &amp; Krauss, C. (2018). Deep learning with long short-term memory networks for financial market predictions. <em>European Journal of Operational Research, 270</em>(2), 654–669. <a href="https://doi.org/10.1016/j.ejor.2017.11.054" target="_blank" style="color:var(--accent)">https://doi.org/10.1016/j.ejor.2017.11.054</a></p>
+
+    <p>Zhong, X., &amp; Enke, D. (2019). Predicting the daily return direction of the stock market using hybrid machine learning algorithms. <em>Financial Innovation, 5</em>(1), 1–20. <a href="https://doi.org/10.1186/s40854-019-0138-7" target="_blank" style="color:var(--accent)">https://doi.org/10.1186/s40854-019-0138-7</a></p>
+  </div>
+
+  <h3>Transferability from EUR/USD Methodology</h3>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>EUR/USD Paper</th>
+        <th>GBP/USD Adaptation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Economic area</td>
+        <td>USA + European Area</td>
+        <td>USA + United Kingdom</td>
+      </tr>
+      <tr>
+        <td>Central bank rate</td>
+        <td>ECB rate</td>
+        <td>BoE Bank Rate</td>
+      </tr>
+      <tr>
+        <td>Inflation</td>
+        <td>EA CPI / CPI YoY</td>
+        <td>UK CPI / UK CPI YoY (ONS)</td>
+      </tr>
+      <tr>
+        <td>Composite PMI</td>
+        <td>EA Composite PMI</td>
+        <td>UK Composite PMI (S&P Global / Markit)</td>
+      </tr>
+      <tr>
+        <td>Equity indices</td>
+        <td>CAC40, DAX, STOXX50/600</td>
+        <td>FTSE100, FTSE250 replacing CAC40/DAX</td>
+      </tr>
+      <tr>
+        <td>Key correlated pair</td>
+        <td>EUR/GBP, EUR/JPY</td>
+        <td>EUR/GBP, GBP/JPY, GBP/CHF</td>
+      </tr>
+      <tr>
+        <td>GDP</td>
+        <td>EA GDP (quarterly)</td>
+        <td>UK GDP (monthly preliminary estimate, ONS)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- PAGE: DATA -->
+<div class="page" id="page-data">
+  <h2>Data Sources &amp; Collection</h2>
+  <p class="page-subtitle">Three categories of features collected over ~2014–2024 (~2,500 daily samples)</p>
+
+  <h3>Category 1 — GBP/USD &amp; Correlated Forex Pairs</h3>
+  <div class="card">
+    <p style="margin-bottom:12px"><strong>Source:</strong> <code>https://www.dukascopy.com/</code> — Daily OHLCV bid/ask data, free historical download</p>
+    <table class="compare-table">
+      <thead><tr><th>Pair</th><th>Relevance</th><th>Features per pair</th></tr></thead>
+      <tbody>
+        <tr><td><strong>GBP/USD</strong></td><td><span class="badge badge-green">Target pair</span></td><td>Open, High, Low, Close (bid), Volume</td></tr>
+        <tr><td>EUR/GBP</td><td>Inverse GBP strength signal</td><td>Open, High, Low, Close, Volume</td></tr>
+        <tr><td>GBP/JPY</td><td>Risk appetite proxy for GBP</td><td>Open, High, Low, Close, Volume</td></tr>
+        <tr><td>GBP/CHF</td><td>Safe-haven divergence</td><td>Open, High, Low, Close, Volume</td></tr>
+        <tr><td>EUR/USD</td><td>USD strength baseline</td><td>Open, High, Low, Close, Volume</td></tr>
+        <tr><td>USD/JPY</td><td>Risk-off USD proxy</td><td>Open, High, Low, Close, Volume</td></tr>
+        <tr><td>AUD/USD</td><td>Risk-on commodity proxy</td><td>Open, High, Low, Close, Volume</td></tr>
+        <tr><td>USD/CHF, NZD/USD, USD/CAD</td><td>Dollar basket diversification</td><td>Open, High, Low, Close, Volume</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Category 2 — Macroeconomic Indicators</h3>
+  <div class="card">
+    <table class="compare-table">
+      <thead><tr><th>Indicator</th><th>Country</th><th>Frequency</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Bank Rate (policy rate)</td><td>UK</td><td>~8x/year (BoE MPC)</td><td>BoE / FRED</td></tr>
+        <tr><td>Fed Funds Rate</td><td>USA</td><td>~8x/year (FOMC)</td><td>FRED (fred.stlouisfed.org)</td></tr>
+        <tr><td>CPI &amp; CPI YoY</td><td>UK + USA</td><td>Monthly</td><td>ONS / BLS (data.bls.gov)</td></tr>
+        <tr><td>GDP Growth</td><td>UK + USA</td><td>Monthly (UK) / Quarterly (US)</td><td>ONS / FRED</td></tr>
+        <tr><td>Composite PMI</td><td>UK + USA</td><td>Monthly</td><td>Investing.com / Markit</td></tr>
+        <tr><td>Current Account Balance</td><td>UK + USA</td><td>Quarterly</td><td>ONS / FRED</td></tr>
+        <tr><td>Unemployment Rate</td><td>UK + USA</td><td>Monthly</td><td>ONS / BLS</td></tr>
+        <tr><td>Retail Sales</td><td>UK + USA</td><td>Monthly</td><td>ONS / FRED</td></tr>
+      </tbody>
+    </table>
+    <div class="callout" style="margin-top:14px">
+      <strong>Low-frequency handling</strong>
+      Each sample carries the value of the last known update (forward-fill). Additionally, the number of days since last update is included as a separate feature to capture announcement-driven volatility spikes.
+    </div>
+  </div>
+
+  <h3>Category 3 — Equity Indices</h3>
+  <div class="card">
+    <p><strong>Source:</strong> <code>yfinance</code> Python library (Yahoo Finance) — free, programmatic</p>
+    <table class="compare-table">
+      <thead><tr><th>Index</th><th>Region</th><th>Features</th></tr></thead>
+      <tbody>
+        <tr><td>FTSE 100 (^FTSE)</td><td>UK — large cap</td><td rowspan="7" style="vertical-align:middle">Open, High, Low, Close, Volume</td></tr>
+        <tr><td>FTSE 250 (^FTMC)</td><td>UK — mid cap (more domestically exposed)</td></tr>
+        <tr><td>S&P 500 (^GSPC)</td><td>USA</td></tr>
+        <tr><td>Nasdaq 100 (^NDX)</td><td>USA — tech</td></tr>
+        <tr><td>DJI (^DJI)</td><td>USA</td></tr>
+        <tr><td>DAX (^GDAXI)</td><td>Germany (EUR/GBP correlation)</td></tr>
+        <tr><td>VIX (^VIX)</td><td>Volatility / risk-off signal</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Scraping / Collection Strategy</h3>
+  <pre>
+# 1. Forex OHLCV — Dukascopy manual download or pydukascopy
+pip install pydukascopy
+from dukascopy import Dukascopy
+# Alternatively: direct CSV download from dukascopy.com/swiss/english/marketwatch/historical/
+
+# 2. Macro indicators — FRED API (free key at fred.stlouisfed.org)
+pip install fredapi
+from fredapi import Fred
+fred = Fred(api_key='YOUR_KEY')
+uk_rate = fred.get_series('UKBRBASE')  # BoE Bank Rate
+us_cpi  = fred.get_series('CPIAUCSL')
+
+# 3. UK-specific indicators — ONS API
+import requests
+url = "https://api.beta.ons.gov.uk/v1/datasets/cpih01/editions/time-series/versions/23/observations"
+
+# 4. Equity indices — yfinance
+import yfinance as yf
+ftse = yf.download('^FTSE', start='2014-01-01', end='2024-12-31')
+vix  = yf.download('^VIX',  start='2014-01-01', end='2024-12-31')
+
+# 5. Merge all on business day index, forward-fill macro data
+import pandas as pd
+df = forex.join([macro, indices], how='outer').fillna(method='ffill')
+df = df[df.index.isin(forex.index)]  # keep only trading days</pre>
+
+  <div class="callout amber">
+    <strong>Data Quality Notes</strong>
+    Exclude days immediately before and after market closures (UK bank holidays differ from US). Dukascopy volumes for bid-only quotes are approximations. For macro data, use release date (not reference period end date) to avoid look-ahead bias — the market reacts to the release, not the period it measures.
+  </div>
+</div>
+
+<!-- PAGE: PREPROCESSING -->
+<div class="page" id="page-preprocessing">
+  <h2>Preprocessing &amp; Feature Engineering</h2>
+  <p class="page-subtitle">Target construction, data transformations, three dataset variants, and date encoding</p>
+
+  <h3>Target Variable Construction</h3>
+  <div class="callout green">
+    <strong>Binary Label</strong>
+    Direction(t) = 1 if GBP/USD close(t+1) &gt; close(t), else 0. Computed by shifting the close price series by -1. The final day has no target and is dropped from training. Class balance is typically close to 50/50 for daily Forex direction — verify and report.
+  </div>
+
+  <h3>Data Transformations</h3>
+  <table class="compare-table">
+    <thead><tr><th>Feature</th><th>Transformation</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>Trading volumes (Forex &amp; indices)</td><td>Square root</td><td>Right-skewed distribution — sqrt compresses heavy tail without losing order</td></tr>
+      <tr><td>Central bank rates (BoE, Fed)</td><td>Square root</td><td>Near-zero for long periods with rare large jumps</td></tr>
+      <tr><td>UK CPI YoY / US CPI YoY</td><td>Log (after shift to positive)</td><td>Multiplicative inflation dynamics; log linearizes percentage changes</td></tr>
+      <tr><td>OHLC prices</td><td>Returns or raw (model-dependent)</td><td>Tree-based models: raw or daily return; linear models: standardized returns</td></tr>
+      <tr><td>All features</td><td>Standardization (SVM, LR, PCA path)</td><td>Distance/gradient-based models require zero-mean unit-variance input</td></tr>
+      <tr><td>All features</td><td>Min-max normalization (other models)</td><td>KNN, NN variants benefit from bounded [0,1] scale</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Three Dataset Variants</h3>
+  <div class="card-row">
+    <div class="card">
+      <div class="stat-label" style="color:var(--accent);font-weight:700;margin-bottom:8px">Dataset 1 — Basic Daily</div>
+      <p style="font-size:13px">Only current day's OHLCV for all Forex pairs and indices, plus the most recent macro indicator values. No history window. Simplest feature space. Baseline.</p>
+    </div>
+    <div class="card">
+      <div class="stat-label" style="color:var(--accent2);font-weight:700;margin-bottom:8px">Dataset 2 — 90-Day Lookback</div>
+      <p style="font-size:13px">Dataset 1 + the preceding 90 trading days of OHLCV for each Forex pair and index. Large feature space. Captures medium-term momentum and mean-reversion patterns.</p>
+    </div>
+    <div class="card">
+      <div class="stat-label" style="color:var(--green);font-weight:700;margin-bottom:8px">Dataset 3 — Technical Indicators</div>
+      <p style="font-size:13px">Dataset 1 + derived technical indicators from time-series. Domain-knowledge feature engineering. In Guyard (2024) this dataset consistently achieved best accuracy.</p>
+    </div>
+  </div>
+
+  <h3>Technical Indicators (Dataset 3)</h3>
+  <table class="compare-table">
+    <thead><tr><th>Indicator</th><th>Formula / Periods</th><th>Motivation</th></tr></thead>
+    <tbody>
+      <tr><td>SMA (price &amp; volume)</td><td>N ∈ {3, 7, 14, 30, 60, 90}</td><td>Trend direction and smoothed momentum</td></tr>
+      <tr><td>WMA (price &amp; volume)</td><td>N ∈ {3, 7, 14, 30, 60, 90}</td><td>Recency-weighted trend signal</td></tr>
+      <tr><td>RSI</td><td>N ∈ {7, 14, 30, 60, 90}</td><td>Overbought/oversold oscillator</td></tr>
+      <tr><td>MACD + Signal</td><td>(7,21,4), (12,26,9), (20,34,17)</td><td>Trend momentum crossover signals</td></tr>
+      <tr><td>Stochastic K% / D%</td><td>N ∈ {1, 2, 3, 7, 14, 30, 60, 90}</td><td>Price position within recent range</td></tr>
+      <tr><td>Momentum</td><td>N ∈ {1, 2, 3, 7, 14, 30, 60, 90}</td><td>Raw price change over N days</td></tr>
+      <tr><td>CCI</td><td>N ∈ {7, 14, 30, 60, 90}</td><td>Deviation from mean price — cyclical indicator</td></tr>
+      <tr><td>ROC</td><td>N ∈ {1, 2, 3, 7, 14, 30, 60, 90}</td><td>Rate of change — percentage momentum</td></tr>
+      <tr><td>Larry Williams R%</td><td>N ∈ {1, 2, 3, 7, 14, 30, 60, 90}</td><td>High-relative overbought/oversold</td></tr>
+      <tr><td>A/D Oscillator</td><td>—</td><td>Accumulation/distribution pressure</td></tr>
+      <tr><td>Disparity</td><td>N ∈ {3, 7, 14, 30, 60, 90}</td><td>Price vs. moving average deviation</td></tr>
+      <tr><td>OSCP</td><td>N,M ∈ {(3,7),(7,14),(14,30),(30,60),(60,90)}</td><td>Price oscillator for trend divergence</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Date Encoding</h3>
+  <div class="card-row">
+    <div class="card">
+      <div class="stat-label" style="margin-bottom:6px;font-weight:600">Tree-based models</div>
+      <p style="font-size:13px">Three ordinal integers: day-of-month, month, day-of-week. Trees handle ordinal splits naturally without inflating dimensionality.</p>
+    </div>
+    <div class="card">
+      <div class="stat-label" style="margin-bottom:6px;font-weight:600">Other models (SVM, LR, KNN)</div>
+      <p style="font-size:13px">Sine and cosine encoding for day-of-month, month, day-of-week. Preserves cyclical continuity (Dec → Jan wrap-around) without false ordinal relationships.</p>
+      <code style="font-size:11px;display:block;margin-top:6px">day_sin = sin(2π × day / max_day)</code>
+      <code style="font-size:11px;display:block">day_cos = cos(2π × day / max_day)</code>
+    </div>
+  </div>
+
+  <div class="callout red">
+    <strong>Look-Ahead Bias Warning</strong>
+    All features used at prediction time must be known at market close on day t. This means: macro indicator = last published value as of day t (not the value referencing period t); technical indicators computed on close(t); target = direction(t) requires close(t+1) and is only used as a label, never as a feature.
+  </div>
+</div>
+
+<!-- PAGE: MODELS -->
+<div class="page" id="page-models">
+  <h2>ML Models &amp; Training Strategy</h2>
+  <p class="page-subtitle">21 base models, PCA decorrelation variants, meta-estimator stacking, and Bayesian hyperparameter search</p>
+
+  <h3>Base Models</h3>
+  <table class="compare-table">
+    <thead><tr><th>Model</th><th>Library</th><th>Key Hyperparameters</th><th>Scaling Needed</th></tr></thead>
+    <tbody>
+      <tr><td>Logistic Regression</td><td>sklearn</td><td>C, penalty, solver</td><td><span class="badge badge-green">Standardize</span></td></tr>
+      <tr><td>K-Nearest Neighbors</td><td>sklearn</td><td>n_neighbors, metric, weights</td><td><span class="badge badge-green">Normalize</span></td></tr>
+      <tr><td>SVM (linear, RBF, sigmoid, poly)</td><td>sklearn</td><td>C, gamma, kernel, degree</td><td><span class="badge badge-green">Standardize</span></td></tr>
+      <tr><td>Decision Tree</td><td>sklearn</td><td>max_depth, min_samples_split, criterion</td><td><span class="badge badge-amber">None</span></td></tr>
+      <tr><td>Bagging (DT, LR, KNN, SVM×4)</td><td>sklearn</td><td>n_estimators + base params</td><td>Inherited from base</td></tr>
+      <tr><td>Random Forest</td><td>sklearn</td><td>n_estimators, max_depth, max_features</td><td><span class="badge badge-amber">None</span></td></tr>
+      <tr><td>Extra Trees</td><td>sklearn</td><td>n_estimators, max_depth, max_features</td><td><span class="badge badge-amber">None</span></td></tr>
+      <tr><td>Gradient Boosting</td><td>sklearn</td><td>n_estimators, learning_rate, max_depth</td><td><span class="badge badge-amber">None</span></td></tr>
+      <tr><td>HistGradientBoosting</td><td>sklearn</td><td>max_iter, learning_rate, max_depth, l2_reg</td><td><span class="badge badge-amber">None</span></td></tr>
+      <tr><td>CatBoost</td><td>catboost</td><td>iterations, depth, learning_rate</td><td><span class="badge badge-amber">None</span></td></tr>
+      <tr><td>LightGBM</td><td>lightgbm</td><td>num_leaves, learning_rate, n_estimators</td><td><span class="badge badge-amber">None</span></td></tr>
+      <tr><td>XGBoost</td><td>xgboost</td><td>max_depth, eta, n_estimators, subsample</td><td><span class="badge badge-amber">None</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>PCA Decorrelation</h3>
+  <p>Each model is trained in two configurations: raw features and PCA-transformed features (full component retention — no dimensionality reduction, only decorrelation). Based on Guyard (2024), PCA consistently reduced accuracy on EUR/USD, suggesting temporal structure in the original feature space that PCA disrupts. Expected same behavior for GBP/USD — PCA experiments kept for completeness and scientific rigor.</p>
+
+  <div class="callout">
+    <strong>Why PCA may hurt here</strong>
+    PCA projects features into orthogonal components by global variance — it destroys the temporal ordering and the domain semantics of indicators like "days since BoE rate change". Decorrelation removes potentially informative collinearity that encodes real market relationships (e.g., GBP/USD and EUR/USD co-movement under USD strength).
+  </div>
+
+  <h3>Meta-Estimator Stacking</h3>
+  <div class="card">
+    <p>Stage 1: fit three base models on datasets 1, 2, and 3 respectively. Stage 2: train a second-level model on the concatenation of [stage-1 predictions, dataset 3 raw features]. Any of the 21 models can be used at either stage.</p>
+    <pre>
+# Stage 1 — fit base models on each dataset representation
+m1 = SVM().fit(X_ds1_train, y_train)
+m2 = XGBoost().fit(X_ds2_train, y_train)
+m3 = KNN().fit(X_ds3_train, y_train)
+
+# Stage 2 — stack predictions as additional features
+X_meta = np.column_stack([
+    X_ds3_train,
+    m1.predict_proba(X_ds1_train)[:,1],
+    m2.predict_proba(X_ds2_train)[:,1],
+    m3.predict_proba(X_ds3_train)[:,1]
+])
+meta_model = DecisionTree().fit(X_meta, y_train)</pre>
+  </div>
+
+  <h3>3-Stage Bayesian Hyperparameter Search</h3>
+  <div class="pipeline">
+    <div class="pipe-stage">
+      <div class="pipe-num" style="background:var(--amber);color:#000">S1</div>
+      <div class="pipe-content">
+        <div class="pipe-title">Search 1 — Model Hyperparameters Only</div>
+        <div class="pipe-desc">Uses full feature set. Finds a good baseline hyperparameter configuration. Passes best point to Search 2.</div>
+      </div>
+    </div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-stage">
+      <div class="pipe-num" style="background:var(--accent2)">S2</div>
+      <div class="pipe-content">
+        <div class="pipe-title">Search 2 — Hyperparameters + Feature Category Selection</div>
+        <div class="pipe-desc">Selects which feature groups to include (e.g., include FTSE250? include UK PMI?). Warm-starts from S1. Passes best point to Search 3.</div>
+      </div>
+    </div>
+    <div class="pipe-arrow">↓</div>
+    <div class="pipe-stage">
+      <div class="pipe-num">S3</div>
+      <div class="pipe-content">
+        <div class="pipe-title">Search 3 — Hyperparameters + Fine-Grained Feature Selection</div>
+        <div class="pipe-desc">Selects individual features (e.g., include FTSE100 volume? include UK CPI days-since-update?). Warm-starts from S2. Largest search space, benefits from S1/S2 prior knowledge.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Cross-Validation Scheme — 8-Fold Rolling Window</h3>
+  <div class="callout green">
+    <strong>Walk-Forward Validation (no data leakage)</strong>
+    Training data: 2014–2020. Validation: 2021–2022 in rolling 3-month windows, each added to training set before the next window. Test set: held-out 2023 (never seen during training or validation). This mirrors live trading conditions where the model is retrained monthly.
+  </div>
+</div>
+
+<!-- PAGE: EVALUATION -->
+<div class="page" id="page-evaluation">
+  <h2>Evaluation &amp; Expected Results</h2>
+  <p class="page-subtitle">Metrics, expected accuracy range, profit formula, and GBP/USD-specific risk considerations</p>
+
+  <h3>Primary Metrics</h3>
+  <div class="card-row">
+    <div class="card">
+      <div class="stat-val" id="acc-val">~55–59%</div>
+      <div class="stat-label">Directional accuracy (expected range on test year)</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">+/-</div>
+      <div class="stat-label">Annual profit (cumulative product formula below)</div>
+    </div>
+    <div class="card">
+      <div class="stat-val">50%</div>
+      <div class="stat-label">Random baseline (coin flip)</div>
+    </div>
+  </div>
+
+  <h3>Profit Formula</h3>
+  <div class="callout">
+    <strong>Cumulative Return Formula</strong>
+    P(t) = P(t−1) × [close(t)/close(t−1)] if prediction=1 (long), or P(t) × [close(t−1)/close(t)] if prediction=0 (short). P(0) = 100. This simulates a CFD long/short strategy with no transaction costs (spread excluded for simplicity; can be added as sensitivity analysis).
+  </div>
+
+  <pre>
+def compute_profit(y_pred, close_prices):
+    P = [100.0]
+    for i in range(1, len(y_pred)):
+        if y_pred[i] == 1:   # predicted UP — go long
+            P.append(P[-1] * close_prices[i] / close_prices[i-1])
+        else:                 # predicted DOWN — go short
+            P.append(P[-1] * close_prices[i-1] / close_prices[i])
+    return P
+
+annual_return = (P[-1] / P[0] - 1) * 100  # in %</pre>
+
+  <h3>Important: Accuracy vs. Profit Divergence</h3>
+  <p>Guyard (2024) demonstrates that the model with highest accuracy is not necessarily the most profitable. A model catching large-move days correctly (even with lower win rate) outperforms one winning more small-move days. Always report both metrics — a 55% accurate model with 30%+ annual return is more valuable than a 58% model with 5% return.</p>
+
+  <div class="chart-wrap">
+    <div class="chart-title">Expected Accuracy Range — Model Category Comparison (from EUR/USD baseline)</div>
+    <svg class="bar-chart" viewBox="0 0 700 220" id="acc-chart">
+      <!-- rendered by JS -->
+    </svg>
+  </div>
+
+  <h3>Expected Results Summary</h3>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Configuration</th>
+        <th>Expected Accuracy</th>
+        <th>Expected Annual Return</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Basic models, no PCA, Dataset 1</td>
+        <td>50–55%</td>
+        <td>Variable</td>
+        <td>Baseline; low feature richness</td>
+      </tr>
+      <tr>
+        <td>Basic models, no PCA, Dataset 3</td>
+        <td><span class="badge badge-green">~55–58%</span></td>
+        <td>~10–25%</td>
+        <td>Technical indicators provide domain signal</td>
+      </tr>
+      <tr>
+        <td>Basic models, with PCA</td>
+        <td>50–55%</td>
+        <td>Lower</td>
+        <td>PCA likely hurts — same pattern as EUR/USD</td>
+      </tr>
+      <tr>
+        <td>Meta-estimators, Dataset 3</td>
+        <td><span class="badge badge-green">~56–59%</span></td>
+        <td><span class="badge badge-green">~20–35%</span></td>
+        <td>Best expected configuration — combines model diversity</td>
+      </tr>
+      <tr>
+        <td>Best single model (HistGradBoost / DT meta)</td>
+        <td>Up to 59%</td>
+        <td>Potentially 30%+</td>
+        <td>Depends on GBP/USD regime in test year</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>GBP/USD Risk Factors</h3>
+  <div class="callout red">
+    <strong>Higher Spread Cost</strong>
+    GBP/USD typical spread is 1–2 pips vs 0.5–1 pip for EUR/USD. In live trading this erodes profit. The paper's profit formula ignores spread — a sensitivity analysis with spread deduction is recommended.
+  </div>
+  <div class="callout amber">
+    <strong>Event-Driven Volatility Spikes</strong>
+    BoE rate decisions, UK CPI prints, and political events (budget announcements, trade policy) cause intraday moves that daily models cannot capture. Consider excluding the day of major announcements from evaluation, or adding a "high-volatility flag" feature.
+  </div>
+  <div class="callout green">
+    <strong>Evaluation Protocol</strong>
+    Two evaluation modes: (1) train on 2014–2022, evaluate on full 2023; (2) monthly rolling re-fit — add each completed month to training set and predict next month. Mode 2 is closer to real deployment and typically shows better stability.
+  </div>
+
+  <h3>Streamlit Interface — Key Components</h3>
+  <table class="compare-table">
+    <thead><tr><th>Component</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Feature input panel</td><td>Sidebar sliders / fields for today's OHLCV and latest macro values</td></tr>
+      <tr><td>Prediction output</td><td>Direction (UP/DOWN), predicted probability, confidence bar</td></tr>
+      <tr><td>Backtest chart</td><td>Cumulative profit curve (model vs. buy-and-hold vs. random) over test year</td></tr>
+      <tr><td>Feature importance</td><td>Top-20 features from best model (SHAP values or tree feature importance)</td></tr>
+      <tr><td>Model comparison table</td><td>Accuracy and annual return for all 21 models across dataset variants</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Completion Checklist</h3>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Literature review &amp; methodology design</span><span>Done</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Data collection pipeline</span><span>In progress</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:30%"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Preprocessing &amp; feature engineering</span><span>Pending</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Model training (21 models × 3 datasets × PCA)</span><span>Pending</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Meta-estimator stacking + Bayesian search</span><span>Pending</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Evaluation &amp; results analysis</span><span>Pending</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Streamlit interface</span><span>Pending</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Presentation (27/06/2026)</span><span>Pending</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+</div><!-- content-wrap -->
+</div><!-- main -->
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isDark ? 'Dark' : 'Light';
+  setTimeout(renderCharts, 50);
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  const isMobile = window.innerWidth <= 700;
+  if (isMobile) {
+    sb.classList.toggle('visible');
+  } else {
+    sb.classList.toggle('hidden');
+    main.classList.toggle('expanded');
+  }
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + id + "'")) {
+      n.classList.add('active');
+    }
+  });
+  window.scrollTo(0, 0);
+}
+
+function markSteps(containerId, n) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const steps = container.querySelectorAll('.step');
+  steps.forEach((s, i) => {
+    if (i < n) s.classList.add('done');
+    else s.classList.remove('done');
+  });
+}
+
+function renderCharts() {
+  const svg = document.getElementById('acc-chart');
+  if (!svg) return;
+  const style = getComputedStyle(document.documentElement);
+  const accent = style.getPropertyValue('--accent').trim();
+  const accent2 = style.getPropertyValue('--accent2').trim();
+  const green = style.getPropertyValue('--green').trim();
+  const amber = style.getPropertyValue('--amber').trim();
+  const textMuted = style.getPropertyValue('--text-muted').trim();
+  const border = style.getPropertyValue('--border').trim();
+  const bg3 = style.getPropertyValue('--bg3').trim();
+
+  const data = [
+    { label: 'No PCA\nDataset 1', min: 50, max: 55, color: accent },
+    { label: 'No PCA\nDataset 3', min: 53, max: 58, color: green },
+    { label: 'With PCA', min: 48, max: 54, color: amber },
+    { label: 'Meta\nEstimators', min: 54, max: 59, color: accent2 },
+  ];
+
+  const W = 700, H = 200, padL = 40, padR = 20, padT = 20, padB = 50;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const minAcc = 46, maxAcc = 62;
+  const scaleX = (v) => padL + ((v - minAcc) / (maxAcc - minAcc)) * chartW;
+  const barH = 28;
+  const gap = (chartH - data.length * barH) / (data.length + 1);
+
+  let html = '';
+  // Grid lines
+  for (let v = 48; v <= 60; v += 2) {
+    const x = scaleX(v);
+    html += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${H - padB}" stroke="${border}" stroke-width="1"/>`;
+    html += `<text x="${x}" y="${H - padB + 15}" text-anchor="middle" font-size="10" fill="${textMuted}">${v}%</text>`;
+  }
+  // 50% line
+  const x50 = scaleX(50);
+  html += `<line x1="${x50}" y1="${padT}" x2="${x50}" y2="${H - padB}" stroke="${amber}" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  html += `<text x="${x50 + 3}" y="${padT + 10}" font-size="9" fill="${amber}">random</text>`;
+
+  data.forEach((d, i) => {
+    const y = padT + gap + i * (barH + gap);
+    const x1 = scaleX(d.min);
+    const x2 = scaleX(d.max);
+    const w = x2 - x1;
+    html += `<rect x="${x1}" y="${y}" width="${w}" height="${barH}" rx="4" fill="${d.color}" opacity="0.75"/>`;
+    html += `<text x="${x1 - 4}" y="${y + barH / 2 + 4}" text-anchor="end" font-size="10" fill="${textMuted}">${d.label.split('\n')[0]}</text>`;
+    html += `<text x="${x2 + 4}" y="${y + barH / 2 + 4}" font-size="10" fill="${d.color}">${d.min}–${d.max}%</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+window.addEventListener('load', () => { setTimeout(renderCharts, 100); });
+window.addEventListener('resize', () => {
+  if (document.getElementById('page-evaluation').classList.contains('active')) {
+    renderCharts();
+  }
+});
+</script>
+</body>
+</html>
