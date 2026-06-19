@@ -7,13 +7,15 @@ Data spec: `References/GBPUSD_ML_data_requirements_spec.md`.
 ## Data collection window
 
 **All raw data is collected for the period 2014-01-01 → 2024-12-31** (≈ 11 years of daily
-history). This is the default `--start`/`--end` range hard-wired into the pipeline scripts
-(`run_fred_pipeline.py`, `build_macro_panel.py`):
+history). This is the default `--start`/`--end` range hard-wired into the pipeline driver
+(`run_fred_pipeline.py`, which calls every `fetch_*.py` then every `process_*.py` in turn):
 
 ```
 python run_fred_pipeline.py --start 2014-01-01 --end 2024-12-31
-python build_macro_panel.py --start 2014-01-01 --end 2024-12-31
 ```
+
+(`src/features/build_macro_panel.py` is an older, unused consolidator — not called by
+`run_fred_pipeline.py` or anything else; see the `src/features/` table below.)
 
 Notes on the window:
 
@@ -51,6 +53,8 @@ ML_prediction_project/
 │   ├── trained/        # Trained models, saved as .joblib/.pkl
 │   └── search_results/ # Bayesian search logs/results per fold
 ├── reports/
+│   ├── macro_data_status.html  # Live dashboard: raw/interim inventory, errors, alt-API research
+│   ├── pipeline_run_log.jsonl  # One JSON line per run_fred_pipeline.py invocation
 │   ├── figures/        # Figures (feature importance, backtest charts, ...)
 │   └── tables/         # Tables (model_comparison.csv, ...)
 ├── configs/            # .env.example, config — no real secrets committed
@@ -75,28 +79,44 @@ that touches GBP or USD is included because they share macro drivers and are cor
 
 ### `data/raw/macro/` — Macro indicators (FRED / ONS)
 
-Each CSV is a release history with columns `date, realtime_start, value`. Present files:
+Each CSV is a release history with columns `date, realtime_start, value`.
 
-| File | Block | Indicator | Frequency | Rows | Coverage |
-|---|---|---|---|---|---|
-| `USA_gdp.csv` | USA | GDP | Quarterly | 459 | 2014-01-01 → 2026-01-01 |
-| `USA_cpi.csv` | USA | CPI (index level) | Monthly | 1012 | 2014-01-01 → 2026-05-01 |
-| `USA_central_bank_rate.csv` | USA | Fed Funds Rate | Daily | 12609 | 2014-01-01 → 2026-06-17 |
-| `USA_current_account.csv` | USA | Current Account Balance | Quarterly | 409 | 2014-01-01 → 2025-10-01 |
-| `UK_gdp.csv` | UK | GDP | Quarterly | 274 | 2014-01-01 → 2020-07-01 |
-| `UK_cpi.csv` | UK | CPI (index level) | Monthly | 587 | 2014-04-01 → 2025-03-01 |
-| `UK_central_bank_rate.csv` | UK | Bank of England Bank Rate | Monthly | 499 | 2014-08-01 → 2026-05-01 |
+| File | Block | Indicator | Frequency | Rows | Coverage | Status |
+|---|---|---|---|---|---|---|
+| `USA_gdp.csv` | USA | GDP | Quarterly | 459 | 2014-01-01 → 2026-01-01 | OK |
+| `USA_cpi.csv` | USA | CPI (index level) | Monthly | 1012 | 2014-01-01 → 2026-05-01 | OK |
+| `USA_central_bank_rate.csv` | USA | Fed Funds Rate | Daily | 12609 | 2014-01-01 → 2026-06-17 | OK |
+| `USA_current_account.csv` | USA | Current Account Balance | Quarterly | 409 | 2014-01-01 → 2025-10-01 | OK |
+| `UK_gdp.csv` | UK | GDP | Quarterly | 274 | 2014-01-01 → 2020-07-01 | STALE — underlying Eurostat source discontinued, not a re-fetch fix |
+| `UK_cpi.csv` | UK | CPI (index level) | Monthly | 587 | 2014-04-01 → 2025-03-01 | STALE — ~15 months behind `USA_cpi.csv` |
+| `UK_central_bank_rate.csv` | UK | Bank of England Bank Rate | Monthly | 499 | 2014-08-01 → 2026-05-01 | OK |
+| `UK_current_account.csv` | UK | Current Account Balance | Quarterly | — | — | MISSING — no FRED ticker found |
+| `USA_composite_pmi.csv` | USA | Composite PMI | — | — | — | MISSING — not on FRED |
+| `UK_composite_pmi.csv` | UK | Composite PMI | — | — | — | MISSING — not on FRED |
 
-Per the spec there should be **6 indicators × 2 blocks**. Status vs. the target set:
+Per the spec there should be **6 indicators × 2 blocks**. This is *not* a clean
+USA-OK/UK-not-OK split — three of the four FRED-backed indicators work on both blocks:
 
-- **Present (FRED-fetchable):** GDP, CPI, central bank rate, current account.
-- **Missing — USA current account** has no UK counterpart file yet; **CPI YoY** is derived
-  later in the panel step (not a separate raw file); **Composite PMI** is intentionally NOT
-  here — it is not published on FRED and must be pulled manually from investing.com
-  (see `src/data/fred_common.py`).
+- **Fully OK on both blocks:** GDP (USA), CPI (USA), central bank rate (USA *and* UK).
+- **UK GDP — stale, not a re-fetch fix:** the FRED series (`CLVMNACSCAB1GQUK`) stops at
+  2020-07-01 because its underlying Eurostat source was discontinued, not because the local
+  copy is simply out of date.
+- **UK CPI — stale:** about 15 months behind the USA file. ONS series `D7BT` (dataset
+  `mm23`) is an unverified candidate replacement — see Section 5 of
+  `reports/macro_data_status.html`.
+- **UK current account — missing entirely:** no FRED ticker has been found. ONS series
+  `HBOP` (dataset `pnbp`) is an unverified candidate; a WIP fetch script targeting it is at
+  `src/data/fetch_current_account_uk_wip.py`.
+- **Composite PMI — missing for BOTH USA and UK**, not a UK-only gap: not published on FRED
+  for either block (the related ISM Manufacturing PMI series family was removed from FRED in
+  June 2016 at ISM's own request). No free full-history API has been found for either
+  country; a documentation stub is at `src/data/fetch_composite_pmi_wip.py`.
+- CPI YoY is not in the table above because it is derived in the panel step, not stored as a
+  separate raw file.
 
 Row counts differ by release frequency (daily Fed rate ≈ 12.6k rows; quarterly GDP a few
-hundred). UK GDP currently stops at 2020-07-01 — re-fetch to extend it.
+hundred). For the live, auto-checked snapshot (file presence/size/row-count) open
+`reports/macro_data_status.html` in a browser.
 
 ### `data/raw/equity/` — Equity indices (yfinance)
 
@@ -137,23 +157,30 @@ Placeholder (`.gitkeep`). Three variants to be built (spec section 3):
 | File | Role |
 |---|---|
 | `fred_common.py` | Shared FRED client + paths; the only `fredapi`-touching logic |
-| `fetch_fred.py` | Generic single-series fetcher |
+| `fetch_fred.py` | Generic single-series fetcher — **not called by `run_fred_pipeline.py`**; standalone manual-lookup tool |
 | `fetch_gdp.py` | Fetch USA/UK GDP release history |
 | `fetch_cpi.py` | Fetch USA/UK CPI release history |
 | `fetch_central_bank_rate.py` | Fetch Fed Funds Rate / BoE Bank Rate |
-| `fetch_current_account.py` | Fetch current-account balance |
+| `fetch_current_account.py` | Fetch USA current-account balance (UK intentionally skipped — see docstring) |
+| `fetch_current_account_uk_wip.py` | **WIP, unverified** — UK current account from the ONS API (series `HBOP`, dataset `pnbp`); run `--raw-dump` first |
+| `fetch_composite_pmi_wip.py` | **WIP stub** — documents why Composite PMI has no free API for USA or UK; scaffolds a manual investing.com-export fallback |
 | `__init__.py` | Package marker |
+
+The two `*_wip.py` scripts are deliberately separate from the four working `fetch_*.py`
+above: they are not wired into `run_fred_pipeline.py` and must be run by hand once their
+source is confirmed working.
 
 ### `src/features/` — Panel build & transforms (pure pandas; runs in Cowork)
 
 | File | Role |
 |---|---|
-| `build_macro_panel.py` | Turn raw release histories into the forward-filled, transform-applied macro panel (no look-ahead: uses `realtime_start`) |
+| `build_macro_panel.py` | Older consolidator script — **not called by `run_fred_pipeline.py` or anything else**; the per-indicator `process_*.py` scripts below are what actually runs |
 | `panel_common.py` | Shared panel helpers |
 | `process_gdp.py` | Per-indicator processing → `data/interim/gdp_panel.csv` |
 | `process_cpi.py` | → `cpi_panel.csv` (adds CPI YoY, log transform) |
 | `process_central_bank_rate.py` | → `central_bank_rate_panel.csv` (sqrt transform) |
-| `process_current_account.py` | → `current_account_panel.csv` |
+| `process_current_account.py` | → `current_account_panel.csv` (USA only for now — picks up a UK CSV automatically, no code change needed, once one exists) |
+| `process_composite_pmi.py` | **WIP** — → `composite_pmi_panel.csv`; prints a message and exits without writing anything until a raw CSV exists for at least one block |
 | `__init__.py` | Package marker |
 
 `src/models/`, `src/evaluation/`, `src/app/` are scaffolded (empty `__init__.py`/`.gitkeep`) and
@@ -168,6 +195,14 @@ to be built.
 | `index.html` | Auto-generated deliverables gallery |
 | `eurusd_data_pipeline_erd.html` | ERD of the data pipeline |
 | `requirements.txt` | Python deps for `src/` |
+
+### `reports/`
+
+| File | Role |
+|---|---|
+| `macro_data_status.html` | Live dashboard (open in browser) — raw/interim file inventory, current errors/warnings, and the alternative-API research notes (ONS candidates, Composite PMI investigation) |
+| `pipeline_run_log.jsonl` | One JSON line appended per `run_fred_pipeline.py` invocation (timestamp, mode, per-script returncode/duration, overall success); created on first run, accumulates from then on |
+| `figures/`, `tables/` | Generated charts and result tables (empty until model training runs) |
 
 ### `References/`
 

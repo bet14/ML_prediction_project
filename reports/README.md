@@ -1,6 +1,8 @@
 # reports/
 
+- `macro_data_status.html` — live dashboard: raw/interim macro file inventory, current errors/warnings, alternative-API research (ONS candidates for UK CPI/current account, Composite PMI investigation)
+- `pipeline_run_log.jsonl` — one JSON line per `run_fred_pipeline.py` invocation (timestamp, mode, per-script returncode/duration, success); appended automatically, not hand-edited
 - `figures/` — images: feature importance (SHAP/tree), backtest charts, accuracy-vs-profit divergence, ...
 - `tables/` — tables: `model_comparison.csv` (21 models x 3 datasets), per-fold metrics tables, ...
 
-Files (`.csv`/`.png`/`.md`) placed directly in `reports/` (not inside `figures/`/`tables/`) will automatically appear on `index.html` via `auto_push.py`.
+Files (`.csv`/`.png`/`.md`) placed directly in `reports/` (not inside `figures/`/`tables/`) will automatically appear on `index.html` via `auto_push.py`. `macro_data_status.html` and `pipeline_run_log.jsonl` follow this too.
