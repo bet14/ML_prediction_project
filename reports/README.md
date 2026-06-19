@@ -1,0 +1,6 @@
+# reports/
+
+- `figures/` — images: feature importance (SHAP/tree), backtest charts, accuracy-vs-profit divergence, ...
+- `tables/` — tables: `model_comparison.csv` (21 models x 3 datasets), per-fold metrics tables, ...
+
+Files (`.csv`/`.png`/`.md`) placed directly in `reports/` (not inside `figures/`/`tables/`) will automatically appear on `index.html` via `auto_push.py`.

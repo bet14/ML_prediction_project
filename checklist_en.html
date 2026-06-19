@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Checklist — Predict GBP/USD</title>
+<style>
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --transition: 0.2s ease;
+}
+[data-theme="dark"] {
+  --bg: #050505; --bg2: #121212; --bg3: #1e1e1e; --border: #333333;
+  --text: #fafafa; --text-muted: #a0a0a0;
+  --accent: #4a9eff; --accent2: #9d7eff;
+  --green: #1abc9c; --amber: #f39c12; --red: #e74c3c;
+}
+[data-theme="light"] {
+  --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4; --border: #d0d5e8;
+  --text: #0d1117; --text-muted: #4b5563;
+  --accent: #4361ee; --accent2: #7c3aed;
+  --green: #059669; --amber: #d97706; --red: #dc2626;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+#topbar {
+  position: sticky; top: 0; z-index: 50; background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px; padding: 14px 24px; flex-wrap: wrap;
+}
+#topbar h1 { font-size: 16px; font-weight: 700; }
+#topbar h1 span { color: var(--accent); }
+.spacer { flex: 1; }
+.overall-wrap { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+.overall-bar { flex: 1; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+.overall-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.4s ease; }
+.overall-pct { font-size: 13px; font-weight: 700; color: var(--accent); min-width: 38px; text-align: right; }
+button {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px; font-family: inherit;
+}
+button:hover { background: var(--border); }
+.content { max-width: 880px; margin: 0 auto; padding: 28px 24px 80px; }
+
+.stage { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
+.stage-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; user-select: none; }
+.stage-head .num { width: 26px; height: 26px; border-radius: 50%; background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.stage-title { font-weight: 600; font-size: 15px; flex: 1; }
+.stage-count { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.stage-bar { width: 70px; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+.stage-bar-fill { height: 100%; background: var(--green); transition: width 0.4s ease; }
+.chevron { font-size: 11px; color: var(--text-muted); transition: transform var(--transition); }
+.stage.collapsed .chevron { transform: rotate(-90deg); }
+.stage-body { padding: 4px 18px 18px; }
+.stage.collapsed .stage-body { display: none; }
+
+.item { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--bg3); }
+.item:last-of-type { border-bottom: none; }
+.item input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+.item label { font-size: 13.5px; cursor: pointer; }
+.item.checked label { color: var(--text-muted); text-decoration: line-through; }
+
+.notes-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 14px 0 6px; }
+textarea.notes {
+  width: 100%; min-height: 64px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: inherit; font-size: 13px; padding: 10px 12px; resize: vertical;
+}
+
+.issues-section { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; }
+.issues-section h2 { font-size: 15px; margin-bottom: 4px; }
+.issues-section .sub { font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; }
+.issue-form { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.issue-form select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 13px; }
+.issue-form input[type=text] { flex: 1; min-width: 180px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 10px; font-size: 13px; }
+.issue-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--bg3); }
+.issue-row:last-child { border-bottom: none; }
+.issue-row input[type=checkbox] { margin-top: 3px; accent-color: var(--green); cursor: pointer; }
+.issue-text { flex: 1; font-size: 13.5px; }
+.issue-row.resolved .issue-text { color: var(--text-muted); text-decoration: line-through; }
+.issue-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-right: 6px; }
+.tag-missing { background: rgba(243,156,18,0.18); color: var(--amber); }
+.tag-incorrect { background: rgba(231,76,60,0.18); color: var(--red); }
+.tag-clarify { background: rgba(157,126,255,0.18); color: var(--accent2); }
+.tag-limitation { background: rgba(160,160,160,0.2); color: var(--text-muted); }
+.del-btn { background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; padding: 2px 6px; }
+.del-btn:hover { color: var(--red); }
+
+.footer-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; flex-wrap: wrap; }
+.note { font-size: 12px; color: var(--text-muted); margin-bottom: 18px; }
+.note a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>Checklist — <span>Predict GBP/USD</span></h1>
+  <div class="spacer"></div>
+  <div class="overall-wrap">
+    <div class="overall-bar"><div class="overall-fill" id="overall-fill"></div></div>
+    <div class="overall-pct" id="overall-pct">0%</div>
+  </div>
+  <button onclick="toggleTheme()" id="theme-btn">Light</button>
+</div>
+
+<div class="content">
+
+<p class="note">Synced with <a href="working_plan.html">working_plan.html</a>. Checked items and notes are saved locally in this browser (localStorage) — reopening this file on the same machine/browser keeps the progress.</p>
+
+<div id="stages-container"></div>
+
+<div class="issues-section">
+  <h2>Issue log — missing / incorrect / needs clarification</h2>
+  <div class="sub">Pre-filled with issues identified as of 2026-06-19. New issues can be added, marked resolved, or deleted.</div>
+  <div class="issue-form">
+    <select id="issue-tag">
+      <option value="missing">Missing</option>
+      <option value="incorrect">Incorrect</option>
+      <option value="clarify">Needs clarification</option>
+      <option value="limitation">Technical limitation</option>
+    </select>
+    <input type="text" id="issue-input" placeholder="Enter new issue..."/>
+    <button onclick="addIssue()">Add</button>
+  </div>
+  <div id="issues-list"></div>
+</div>
+
+<div class="footer-actions">
+  <button onclick="exportNotes()">Export notes (.md)</button>
+  <button onclick="resetAll()">Reset all</button>
+</div>
+
+</div>
+
+<script>
+const STAGES = [
+  { id: "s1", title: "Data Collection", items: [
+    "Create folder structure: data/raw, data/processed, notebooks, models, reports",
+    "Register a FRED API key (fred.stlouisfed.org)",
+    "Download GBP/USD OHLCV — Dukascopy, period 2014–2024",
+    "Download correlated pairs: EUR/GBP, GBP/JPY, GBP/CHF, EUR/USD, USD/JPY, AUD/USD, USD/CHF, NZD/USD, USD/CAD",
+    "Download UK+US macro indicators: Bank Rate/Fed Funds, CPI, GDP, PMI, Current Account, Unemployment, Retail Sales",
+    "Download equity indices via yfinance: FTSE100, FTSE250, S&P500, Nasdaq100, DJI, DAX, VIX",
+    "Cross-check UK/US bank holidays (they differ), exclude mismatched sessions",
+    "Copy all raw CSV files into data/raw/ in the connected project folder"
+  ]},
+  { id: "s2", title: "Preprocessing & Feature Engineering", items: [
+    "Merge all sources on a business-day index, forward-fill macro data",
+    "Use release date for macro indicators (avoid look-ahead bias)",
+    "Build the Direction(t) = 1 if close(t+1) > close(t) label, check class balance",
+    "Apply transforms (sqrt / log / standardize / min-max) per feature group",
+    "Build Dataset 1 — Basic Daily",
+    "Build Dataset 2 — 90-Day Lookback",
+    "Build Dataset 3 — Technical Indicators (SMA, WMA, RSI, MACD, Stochastic, Momentum, CCI, ROC, Williams %R, A/D, Disparity, OSCP)",
+    "Date encoding: ordinal for tree-based models, sin/cos for SVM/LR/KNN",
+    "Save all 3 dataset variants to data/processed/"
+  ]},
+  { id: "s3", title: "Model Training", items: [
+    "Write a modular training pipeline, save intermediate results in batches",
+    "MVP: run 5–6 strong models on Dataset 3 (LightGBM, XGBoost, Random Forest, SVM, Logistic Regression, KNN)",
+    "Set up rolling 8-fold CV (train 2014–2020, validate 2021–2022, held-out test 2023)",
+    "Test with/without PCA decorrelation, compare results",
+    "Extend to the full 21 models if time allows",
+    "Experiment with meta-estimator stacking (2-stage)",
+    "Run the 3-stage Bayesian hyperparameter search"
+  ]},
+  { id: "s4", title: "Evaluation", items: [
+    "Compute directional accuracy + cumulative profit P(t) on the test year",
+    "Compare against the 50% random baseline",
+    "Analyze accuracy vs. profit divergence",
+    "Sensitivity analysis with GBP/USD spread (1–2 pips)",
+    "Flag/exclude high-volatility days (BoE decisions, UK CPI releases, political events)",
+    "Run evaluation mode 2 — monthly rolling re-fit",
+    "Export the model_comparison.csv comparison table"
+  ]},
+  { id: "s5", title: "Streamlit Interface", items: [
+    "Sidebar input panel for today's OHLCV + macro values",
+    "Output: predicted direction, probability, confidence bar",
+    "Backtest chart: cumulative profit (model vs. buy-and-hold vs. random)",
+    "Feature importance (SHAP or tree importance), top-20",
+    "Comparison table across all models and dataset variants"
+  ]},
+  { id: "s6", title: "Report & Presentation (2026-06-27)", items: [
+    "Compile results into slides / report",
+    "Prepare a live Streamlit demo",
+    "Double-check references (APA 7th)",
+    "Push code to GitHub (branch_lee) via push.bat on the Windows machine"
+  ]}
+];
+
+const DEFAULT_ISSUES = [
+  { tag: "missing", text: "No raw data yet — the data/, notebooks/, models/, reports/ folders don't exist in the repo (only References/ does).", date: "2026-06-19", resolved: false },
+  { tag: "limitation", text: "The Cowork sandbox has no outbound network access (verified: fred.stlouisfed.org, query1.finance.yahoo.com, api.beta.ons.gov.uk, dukascopy.com, pypi.org all rejected through the proxy). fredapi/yfinance/pydukascopy/ONS API scripts cannot run directly inside Cowork — data must be downloaded elsewhere and copied into data/raw/.", date: "2026-06-19", resolved: false },
+  { tag: "clarify", text: "Not confirmed whether a personal FRED API key already exists — register at fred.stlouisfed.org/docs/api/api_key.html before running the macro-indicator collection script.", date: "2026-06-19", resolved: false },
+  { tag: "limitation", text: "git push in auto_push.py requires a personal SSH key to GitHub — not available inside the Cowork sandbox. push.bat still needs to be run on the Windows machine after Cowork creates/edits files.", date: "2026-06-19", resolved: false },
+  { tag: "clarify", text: "The compute budget for Model Training (21 models × 3 datasets × PCA × Bayesian search × 8-fold CV) hasn't been estimated for time/resources — the MVP scope should be locked down before running the full grid.", date: "2026-06-19", resolved: false },
+  { tag: "clarify", text: "working_plan.html only has the 2026-06-27 presentation milestone — no intermediate deadlines per stage to track progress backward from that date.", date: "2026-06-19", resolved: false }
+];
+
+const STORE_KEY = "mlpred_checklist_en_v1";
+
+function loadState() {
+  let raw = localStorage.getItem(STORE_KEY);
+  if (raw) {
+    try { return JSON.parse(raw); } catch(e) {}
+  }
+  return { checks: {}, notes: {}, issues: DEFAULT_ISSUES.map((it, i) => ({ id: "d" + i, ...it })) };
+}
+let state = loadState();
+
+function saveState() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+function renderStages() {
+  const container = document.getElementById("stages-container");
+  container.innerHTML = "";
+  STAGES.forEach((stage, si) => {
+    const total = stage.items.length;
+    let done = 0;
+    stage.items.forEach((_, ii) => { if (state.checks[stage.id + "-" + ii]) done++; });
+
+    const el = document.createElement("div");
+    el.className = "stage";
+    el.id = "stage-" + stage.id;
+
+    const itemsHtml = stage.items.map((label, ii) => {
+      const cid = stage.id + "-" + ii;
+      const checked = !!state.checks[cid];
+      return `<div class="item${checked ? " checked" : ""}">
+        <input type="checkbox" id="chk-${cid}" ${checked ? "checked" : ""} onchange="toggleCheck('${cid}')"/>
+        <label for="chk-${cid}">${label}</label>
+      </div>`;
+    }).join("");
+
+    const noteVal = state.notes[stage.id] || "";
+
+    el.innerHTML = `
+      <div class="stage-head" onclick="toggleCollapse('${stage.id}')">
+        <div class="num">${si + 1}</div>
+        <div class="stage-title">${stage.title}</div>
+        <div class="stage-bar"><div class="stage-bar-fill" id="bar-${stage.id}" style="width:${total ? (done/total*100) : 0}%"></div></div>
+        <div class="stage-count" id="count-${stage.id}">${done}/${total}</div>
+        <div class="chevron">&#9660;</div>
+      </div>
+      <div class="stage-body">
+        ${itemsHtml}
+        <div class="notes-label">Notes — missing / incorrect for this stage</div>
+        <textarea class="notes" id="note-${stage.id}" placeholder="Free-form notes..." oninput="saveNote('${stage.id}', this.value)">${noteVal}</textarea>
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+function toggleCheck(cid) {
+  state.checks[cid] = !state.checks[cid];
+  saveState();
+  renderStages();
+  renderOverall();
+  restoreCollapseState();
+}
+
+function saveNote(stageId, val) {
+  state.notes[stageId] = val;
+  saveState();
+}
+
+function toggleCollapse(stageId) {
+  const el = document.getElementById("stage-" + stageId);
+  el.classList.toggle("collapsed");
+  let collapsed = JSON.parse(localStorage.getItem(STORE_KEY + "_collapsed") || "{}");
+  collapsed[stageId] = el.classList.contains("collapsed");
+  localStorage.setItem(STORE_KEY + "_collapsed", JSON.stringify(collapsed));
+}
+
+function restoreCollapseState() {
+  let collapsed = JSON.parse(localStorage.getItem(STORE_KEY + "_collapsed") || "{}");
+  Object.keys(collapsed).forEach(id => {
+    if (collapsed[id]) {
+      const el = document.getElementById("stage-" + id);
+      if (el) el.classList.add("collapsed");
+    }
+  });
+}
+
+function renderOverall() {
+  let total = 0, done = 0;
+  STAGES.forEach(stage => {
+    stage.items.forEach((_, ii) => {
+      total++;
+      if (state.checks[stage.id + "-" + ii]) done++;
+    });
+  });
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById("overall-fill").style.width = pct + "%";
+  document.getElementById("overall-pct").textContent = pct + "% (" + done + "/" + total + ")";
+}
+
+const TAG_LABEL = { missing: "Missing", incorrect: "Incorrect", clarify: "Needs clarification", limitation: "Technical limitation" };
+
+function renderIssues() {
+  const list = document.getElementById("issues-list");
+  list.innerHTML = "";
+  if (!state.issues.length) {
+    list.innerHTML = '<div class="issue-meta">No issues recorded yet.</div>';
+    return;
+  }
+  state.issues.forEach(issue => {
+    const row = document.createElement("div");
+    row.className = "issue-row" + (issue.resolved ? " resolved" : "");
+    row.innerHTML = `
+      <input type="checkbox" ${issue.resolved ? "checked" : ""} onchange="toggleIssue('${issue.id}')"/>
+      <div class="issue-text">
+        <span class="tag tag-${issue.tag}">${TAG_LABEL[issue.tag] || issue.tag}</span>${issue.text}
+        <div class="issue-meta">${issue.date}</div>
+      </div>
+      <button class="del-btn" onclick="deleteIssue('${issue.id}')">Delete</button>`;
+    list.appendChild(row);
+  });
+}
+
+function addIssue() {
+  const input = document.getElementById("issue-input");
+  const tag = document.getElementById("issue-tag").value;
+  const text = input.value.trim();
+  if (!text) return;
+  const id = "u" + Date.now();
+  const date = new Date().toISOString().slice(0, 10);
+  state.issues.push({ id, tag, text, date, resolved: false });
+  saveState();
+  input.value = "";
+  renderIssues();
+}
+
+function toggleIssue(id) {
+  const issue = state.issues.find(i => i.id === id);
+  if (issue) issue.resolved = !issue.resolved;
+  saveState();
+  renderIssues();
+}
+
+function deleteIssue(id) {
+  state.issues = state.issues.filter(i => i.id !== id);
+  saveState();
+  renderIssues();
+}
+
+function exportNotes() {
+  let md = "# Checklist — Predict GBP/USD project\n\n";
+  let total = 0, done = 0;
+  STAGES.forEach((stage, si) => {
+    md += `## ${si + 1}. ${stage.title}\n\n`;
+    stage.items.forEach((label, ii) => {
+      const checked = !!state.checks[stage.id + "-" + ii];
+      total++; if (checked) done++;
+      md += `- [${checked ? "x" : " "}] ${label}\n`;
+    });
+    const note = state.notes[stage.id];
+    if (note && note.trim()) {
+      md += `\nNotes: ${note.trim()}\n`;
+    }
+    md += "\n";
+  });
+  md += `Overall progress: ${done}/${total} (${total ? Math.round(done/total*100) : 0}%)\n\n`;
+  md += "## Issue log\n\n";
+  state.issues.forEach(issue => {
+    md += `- [${issue.resolved ? "x" : " "}] [${TAG_LABEL[issue.tag] || issue.tag}] ${issue.text} (${issue.date})\n`;
+  });
+
+  const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "checklist_notes_" + new Date().toISOString().slice(0,10) + ".md";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function resetAll() {
+  if (!confirm("Clear all checks and notes saved in this browser?")) return;
+  localStorage.removeItem(STORE_KEY);
+  localStorage.removeItem(STORE_KEY + "_collapsed");
+  state = loadState();
+  renderStages();
+  renderOverall();
+  renderIssues();
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute("data-theme") === "dark";
+  html.setAttribute("data-theme", isDark ? "light" : "dark");
+  document.getElementById("theme-btn").textContent = isDark ? "Dark" : "Light";
+}
+
+renderStages();
+renderOverall();
+renderIssues();
+restoreCollapseState();
+</script>
+</body>
+</html>

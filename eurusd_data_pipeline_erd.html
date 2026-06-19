@@ -1,0 +1,105 @@
+<h2 class="sr-only">Sơ đồ ERD mô tả cách các bảng nguồn dữ liệu (chỉ số kinh tế, market index, forex pair, technical indicator) được join theo khóa ngày thành bảng dataset cuối cùng cho mô hình dự đoán hướng EUR/USD</h2>
+<style>
+#erd svg.erDiagram .divider path { stroke-opacity: 0.5; }
+#erd svg.erDiagram .row-rect-odd path,
+#erd svg.erDiagram .row-rect-odd rect,
+#erd svg.erDiagram .row-rect-even path,
+#erd svg.erDiagram .row-rect-even rect { stroke: none !important; }
+</style>
+<div id="erd"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+  },
+});
+const erdSource = `erDiagram
+  DIM_DATE ||--o{ ECONOMIC_INDICATOR : has
+  DIM_DATE ||--o{ MARKET_INDEX_PRICE : has
+  DIM_DATE ||--o{ FOREX_PAIR_PRICE : has
+  DIM_DATE ||--o{ TECHNICAL_INDICATOR : has
+  DIM_DATE ||--|| ML_DATASET : feeds
+  DIM_DATE {
+    date date PK
+    int day
+    int month
+    int weekday
+    float day_sin
+    float day_cos
+  }
+  ECONOMIC_INDICATOR {
+    date date FK
+    string country
+    string indicator_name
+    float value
+    date last_update_date
+    int days_since_update
+  }
+  MARKET_INDEX_PRICE {
+    date date FK
+    string index_name
+    float open_price
+    float close_price
+    float low_price
+    float high_price
+    float volume_sqrt
+  }
+  FOREX_PAIR_PRICE {
+    date date FK
+    string pair_name
+    float open_price
+    float close_price
+    float low_price
+    float high_price
+    float volume_sqrt
+  }
+  TECHNICAL_INDICATOR {
+    date date FK
+    string instrument
+    string indicator_name
+    int period_n
+    float value
+  }
+  ML_DATASET {
+    date date PK
+    int direction_target
+    string dataset_type
+  }
+`;
+const { svg } = await mermaid.render('erd-svg', erdSource);
+document.getElementById('erd').innerHTML = svg;
+
+document.querySelectorAll('#erd svg.erDiagram .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+
+document.querySelectorAll('#erd svg.erDiagram .row-rect-odd path, #erd svg.erDiagram .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>

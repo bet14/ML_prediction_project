@@ -1,0 +1,32 @@
+# Install & run on a personal machine / Google Colab / Kaggle — do NOT install inside the Cowork sandbox
+# (sandbox has no outbound network, pip install will fail)
+
+# Data & processing
+pandas
+numpy
+requests
+python-dotenv
+
+# Data collection (sources listed in working_plan.html)
+fredapi          # FRED API (UK/US macro indicators)
+yfinance         # equity indices: FTSE100, FTSE250, S&P500, Nasdaq100, DJI, DAX, VIX
+# Dukascopy: download via a tick-data-downloader or dedicated API, no official pip package
+
+# Feature engineering
+ta                # technical indicators (SMA, RSI, MACD, Stochastic, CCI, ROC, Williams %R, ...)
+
+# Modeling
+scikit-learn
+xgboost
+lightgbm
+catboost
+scikit-optimize   # Bayesian hyperparameter search (BayesSearchCV)
+joblib
+
+# Evaluation & model explainability
+shap
+matplotlib
+seaborn
+
+# Streamlit interface
+streamlit
