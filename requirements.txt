@@ -5,6 +5,7 @@
 pandas
 numpy
 requests
+beautifulsoup4   # HTML parsing for fetch_composite_pmi_wip.py (investing.com scraper)
 python-dotenv
 
 # Data collection (sources listed in working_plan.html)

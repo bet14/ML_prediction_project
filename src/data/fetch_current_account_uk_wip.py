@@ -1,36 +1,41 @@
 """
-WIP -- fetch UK current account balance from the ONS (Office for National Statistics)
-open API, as a candidate replacement for the missing FRED ticker (see
+Fetch UK current account balance from the ONS (Office for National Statistics) v1
+beta API, as a candidate replacement for the missing FRED ticker (see
 fetch_current_account.py docstring: no UK series has been confirmed on FRED).
 
-STATUS: UNVERIFIED. The ONS endpoint below was identified from ONS's own published
-series/dataset ids during the source investigation in this project, but the live JSON
-response was never successfully fetched and inspected in that session (the fetch tool
-available there returned an empty body for this URL, and no browser was available to
-confirm). Run this script with --raw-dump on a machine with normal network access and
-READ the printed JSON before trusting parse_ons_response() below.
+STATUS: VERIFIED 2026-06-19. The original endpoint this script targeted
+(api.ons.gov.uk/timeseries/.../dataset/.../data, the "v0 API") is permanently
+retired by ONS -- see https://developer.ons.gov.uk/retirement/v0api/. That is why
+it returned an empty body in every earlier attempt; it was never a network problem.
+The correct live endpoint is the v1 beta API below, confirmed by fetching it directly
+and inspecting the real JSON (quarterly rows from "1955 Q1" onward, real GBP-million
+values, dataset metadata title/cdid/unit all matching "BoP Current Account Balance SA
+£m"). parse_ons_response() below has been updated to match that real shape.
 
 Candidate series
 -----------------
-    UK: HBOP, dataset pnbp -- "Balance of payments, current account" (quarterly, GBP
-        millions). No API key required.
-    Endpoint: https://api.ons.gov.uk/timeseries/hbop/dataset/pnbp/data
+    UK: HBOP, dataset pnbp -- "BoP Current Account Balance SA £m" (quarterly,
+        seasonally adjusted). No API key required.
+    Endpoint: https://api.beta.ons.gov.uk/v1/data
+              ?uri=/economy/nationalaccounts/balanceofpayments/timeseries/hbop/pnbp
 
 Known difference vs. FRED/ALFRED
 ---------------------------------
-The ONS timeseries API does not expose a per-observation vintage/revision history the
-way FRED's get_series_all_releases() does (see fred_common.py). A single call returns
-the dataset's *current* values plus one dataset-level release-date field in the response
-metadata (exact key name unverified -- inspect with --raw-dump). This script
-approximates `realtime_start` as that single release date for every row, which is
-materially weaker than the true per-release ALFRED-style history used elsewhere in this
-pipeline -- flag this if the UK current-account column ends up feeding the model.
+The ONS v1 API does not expose a per-observation vintage/revision history the way
+FRED's get_series_all_releases() does (see fred_common.py). A single call returns the
+dataset's *current* values plus one dataset-level release-date field at
+payload["description"]["releaseDate"] (confirmed live, e.g.
+"2026-03-30T23:00:00.000Z", with payload["description"]["nextRelease"] giving the next
+scheduled update). This script approximates `realtime_start` as that single release
+date for every row, which is materially weaker than the true per-release ALFRED-style
+history used elsewhere in this pipeline -- flag this if the UK current-account column
+ends up feeding the model.
 
 Output
 ------
 data/raw/macro/UK_current_account.csv -- same columns as fetch_current_account.py
 (date, realtime_start, value), so process_current_account.py (BLOCKS=["USA","UK"])
-picks it up automatically with no code changes once this file is confirmed working.
+picks it up automatically with no code changes.
 
 Usage
 -----
@@ -47,11 +52,12 @@ import requests
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RAW_DIR = PROJECT_ROOT / "data" / "raw" / "macro"
-ONS_ENDPOINT = "https://api.ons.gov.uk/timeseries/hbop/dataset/pnbp/data"
+ONS_ENDPOINT = "https://api.beta.ons.gov.uk/v1/data"
+ONS_URI = "/economy/nationalaccounts/balanceofpayments/timeseries/hbop/pnbp"
 
 
-def fetch_raw_json(endpoint: str = ONS_ENDPOINT) -> dict:
-    resp = requests.get(endpoint, timeout=30)
+def fetch_raw_json(endpoint: str = ONS_ENDPOINT, uri: str = ONS_URI) -> dict:
+    resp = requests.get(endpoint, params={"uri": uri}, timeout=30)
     resp.raise_for_status()
     return resp.json()
 
@@ -73,12 +79,13 @@ def _parse_ons_period(series: pd.Series) -> pd.Series:
 
 
 def parse_ons_response(payload: dict) -> pd.DataFrame:
-    """Best-effort parse of the ONS timeseries response shape documented at
-    https://developer.ons.gov.uk/ -- UNVERIFIED against a live response. ONS typically
-    nests observations under 'quarters'/'months'/'years' as a list of
-    {"date": "2024 Q1", "value": "..."} dicts; current account is quarterly so
-    'quarters' is tried first."""
-    release_date = payload.get("releaseDate") or payload.get("release_date")
+    """Parse the ONS v1 API timeseries response -- VERIFIED against a live response on
+    2026-06-19. Observations are nested under 'quarters'/'months'/'years' (whichever
+    matches the series frequency; the other two are present as empty lists, not
+    missing keys) as a list of {"date": "1955 Q1", "value": "-22", ...} dicts; current
+    account is quarterly so 'quarters' is tried first. The release date is NOT at the
+    top level -- it lives at payload["description"]["releaseDate"]."""
+    release_date = (payload.get("description") or {}).get("releaseDate")
 
     rows = None
     for key in ("quarters", "months", "years"):
@@ -132,7 +139,12 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "UK_current_account.csv"
     df.to_csv(out_path, index=False)
-    print(f"[UK] saved {len(df)} rows -> {out_path}  (UNVERIFIED parser -- spot-check the values)")
+    print(
+        f"[UK] saved {len(df)} rows -> {out_path}  (verified parser against the live "
+        "ONS v1 API -- still spot-check a few rows against "
+        "ons.gov.uk/economy/nationalaccounts/balanceofpayments/timeseries/hbop/pnbp "
+        "before trusting the full history)"
+    )
 
 
 if __name__ == "__main__":

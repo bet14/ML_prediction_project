@@ -55,6 +55,7 @@
 
 <h1>Macro Data Status — GBPUSD direction-prediction project</h1>
 <div class="subtitle">Snapshot generated 2026-06-19 · based on the most recent run of <code>run_fred_pipeline.py --start 2014-01-01</code> · static file, does not auto-refresh — rerun the pipeline and ask to regenerate for fresh numbers.</div>
+<div class="subtitle">Research pass added 2026-06-19 (same day, later session): ONS v1 beta API verified live for both UK candidates; a real investing.com scraper was implemented and a hard data-availability limit was found for Composite PMI. Section 5 rewritten accordingly — raw file row counts/badges above are unchanged because none of the WIP scripts have been <em>run</em> yet, only verified/implemented.</div>
 
 <div class="summary">
   <div class="stat ok"><div class="n">5</div><div class="l">series OK</div></div>
@@ -202,6 +203,9 @@
 <tr><td><code>src/features/process_current_account.py</code></td><td>Build current_account_panel.csv</td><td class="mono">2026-06-19 14:33:29</td><td><span class="badge badge-ok">in use</span></td></tr>
 <tr><td><code>src/data/fetch_fred.py</code></td><td>Alternative all-in-one fetch script; has composite_pmi/UK current_account entries but left as None</td><td class="mono">2026-06-19 13:25:23</td><td><span class="badge badge-off">unused</span></td></tr>
 <tr><td><code>src/features/build_macro_panel.py</code></td><td>Alternative consolidator, intended to produce the unified macro_panel.csv</td><td class="mono">2026-06-19 13:25:49</td><td><span class="badge badge-off">unused — INDICATORS dict out of sync, missing composite_pmi + UK current_account</span></td></tr>
+<tr><td><code>src/data/fetch_current_account_uk_wip.py</code></td><td>Fetch UK current account from ONS v1 beta API (series <code>HBOP</code>, dataset <code>pnbp</code>) — would write directly to <code>UK_current_account.csv</code></td><td class="mono">2026-06-19 (schema verified live)</td><td><span class="badge badge-warn">WIP — verified, not yet run</span></td></tr>
+<tr><td><code>src/data/fetch_cpi_uk_alt_wip.py</code></td><td>Fetch alternative UK CPI from ONS v1 beta API (series <code>D7BT</code>, dataset <code>mm23</code>) — writes to a separate <code>UK_cpi_ons_alt.csv</code>, not over <code>UK_cpi.csv</code></td><td class="mono">2026-06-19 (schema verified live, release-date field verified by analogy)</td><td><span class="badge badge-warn">WIP — verified, not yet run</span></td></tr>
+<tr><td><code>src/data/fetch_composite_pmi_wip.py</code></td><td>Real investing.com scraper (<code>fetch_recent_releases()</code>) for both blocks — see Section 5, scope is incremental updates only, not backfill</td><td class="mono">2026-06-19 (scraper implemented &amp; tested live)</td><td><span class="badge badge-warn">WIP — limited scope</span></td></tr>
 </table>
 
 <h2>4. Current errors / warnings</h2>
@@ -213,38 +217,35 @@
   <div class="err-item"><div class="tag"><span class="badge badge-off">ARCHITECTURE</span></div><div class="body"><b>build_macro_panel.py out of sync</b> — INDICATORS dict is missing composite_pmi and the UK current_account placeholder, not currently used, the unified 24-column macro_panel.csv from spec doesn't exist yet.</div></div>
   <div class="err-item"><div class="tag"><span class="badge badge-ok">NOT AN ERROR</span></div><div class="body">The <code>no ALFRED data ... skipping chunk</code> lines in the console log — by-design behavior in <code>fetch_indicator_releases</code> (fred_common.py): ALFRED doesn't have vintage history back to 2000 for every series, out-of-coverage chunks are skipped, not fatal.</div></div>
   <div class="err-item"><div class="tag"><span class="badge badge-ok">NO IMPACT</span></div><div class="body">Scattered NaNs: USA_cpi (1, obs 2025-10-01 — possibly the US government shutdown delaying the BLS release), UK_cpi (1), UK_central_bank_rate (2) — all get dropped via <code>dropna</code> before forward-fill in panel_common.py.</div></div>
+  <div class="err-item"><div class="tag"><span class="badge badge-ok">RESOLVED (mystery)</span></div><div class="body"><b>Why the earlier ONS attempts returned empty bodies</b> — the v0 API this project originally targeted (<code>api.ons.gov.uk/timeseries/.../dataset/.../data</code>) is <b>permanently retired</b> (confirmed via <a href="https://developer.ons.gov.uk/retirement/v0api/">developer.ons.gov.uk/retirement/v0api</a>). It was never a network/firewall problem. The replacement v1 beta API (<code>api.beta.ons.gov.uk/v1/data?uri=...</code>) was live-fetched and confirmed working for both UK candidate series — see Section 5.</div></div>
+  <div class="err-item"><div class="tag"><span class="badge badge-warn">FINDING</span></div><div class="body"><b>investing.com Composite PMI pages do not hold full history</b> — both <code>s-p-global-composite-pmi-1492</code> (USA) and <code>composite-pmi-1934</code> (UK) economic-calendar pages were fetched live and returned only ~3-4 of the most recent releases, not 2014-2024 history. Corroborated by another user's own comment on the USA page complaining about exactly this depth cut. This is a data-availability limit on investing.com's side, not a scraping/anti-bot failure — see Section 5 for the full writeup and what it means for <code>fetch_composite_pmi_wip.py</code>.</div></div>
+  <div class="err-item"><div class="tag"><span class="badge badge-off">CLEANUP</span></div><div class="body"><code>data/raw/macro/UK_current_account.csv.DELETE_ME</code> (0 bytes, harmless) could not be deleted from the Cowork session via any method tried (rm/unlink/os.remove/find -delete all returned permission errors). Needs manual deletion in Windows Explorer when convenient.</div></div>
 </div>
 
-<h2>5. Alternative non-FRED API sources (research)</h2>
-<div class="note">Investigated for the 3 series marked MISSING above. None of these are wired into the pipeline yet — they are candidates to evaluate before writing a fetch script.</div>
+<h2>5. Alternative non-FRED API sources (research) — updated 2026-06-19</h2>
+<div class="note">Live-verified this session (not just researched). None of these are wired into <code>run_fred_pipeline.py</code> yet — each is implemented as a standalone <code>*_wip.py</code> script, to be run by hand once a human signs off (see each script's docstring for the exact reasoning).</div>
 <table>
 <tr><th>Indicator</th><th>Candidate source</th><th>Endpoint / ticker</th><th>Status / caveat</th></tr>
 <tr>
   <td><code>UK_cpi.csv</code> (replacement for stale FRED series)</td>
-  <td>ONS (UK Office for National Statistics) open API</td>
-  <td class="mono">series D7BT, dataset mm23<br>https://api.ons.gov.uk/timeseries/d7bt/dataset/mm23/data<br>no API key required</td>
-  <td><span class="badge badge-warn">NOT LIVE-VERIFIED</span> this session — the JSON endpoint returned an empty body via web_fetch, and browser escalation was unavailable. Confirm with curl/browser before building a fetch script.</td>
+  <td>ONS v1 beta API (the old v0 API this project originally targeted is permanently retired — see Section 4 "RESOLVED")</td>
+  <td class="mono">series D7BT, dataset mm23 ("CPI INDEX 00: ALL ITEMS 2015=100")<br>https://api.beta.ons.gov.uk/v1/data?uri=/economy/inflationandpriceindices/timeseries/d7bt/mm23<br>no API key required</td>
+  <td><span class="badge badge-ok">LIVE-VERIFIED 2026-06-19</span> — real monthly rows confirmed ("2013 FEB" = 97.8, etc.). Implemented in <code>src/data/fetch_cpi_uk_alt_wip.py</code>, writes to a <b>separate</b> file <code>UK_cpi_ons_alt.csv</code> — base-year/rebasing likely differs from the FRED series, so only derived CPI YoY should be compared before swapping it in, not raw levels. Not yet run.</td>
 </tr>
 <tr>
   <td><code>UK_current_account.csv</code></td>
-  <td>ONS open API</td>
-  <td class="mono">series HBOP, dataset pnbp<br>https://api.ons.gov.uk/timeseries/hbop/dataset/pnbp/data<br>no API key required</td>
-  <td><span class="badge badge-warn">NOT LIVE-VERIFIED</span> — same caveat as above.</td>
+  <td>ONS v1 beta API</td>
+  <td class="mono">series HBOP, dataset pnbp ("BoP Current Account Balance SA £m")<br>https://api.beta.ons.gov.uk/v1/data?uri=/economy/nationalaccounts/balanceofpayments/timeseries/hbop/pnbp<br>no API key required</td>
+  <td><span class="badge badge-ok">LIVE-VERIFIED 2026-06-19</span> — real quarterly rows confirmed from 1955 Q1, genuine GBP-million values, dataset title/cdid/unit all matching. Implemented in <code>src/data/fetch_current_account_uk_wip.py</code>, writes directly to <code>UK_current_account.csv</code> (no conflicting production file). Not yet run. Caveat: ONS v1 has no ALFRED-style per-observation revision history — <code>realtime_start</code> is approximated as one dataset-level release date for every row.</td>
 </tr>
 <tr>
-  <td><code>USA_composite_pmi.csv</code></td>
-  <td>S&amp;P Global / Markit Composite PMI</td>
-  <td class="mono">no free full-history API found</td>
-  <td><span class="badge badge-bad">NO VIABLE SOURCE</span> — ISM Manufacturing PMI (a narrower, manufacturing-only US index — not the same series as Composite PMI) used to be on FRED as part of the entire "ISM Report on Business" family (NAPM, NAPMPI, NAPMEI, NAPMNOI, NAPMSDI, NAPMII, NAPMPRI — 22 series). ISM had the whole family removed from FRED in June 2016 at its own request. No comparable free API has replaced it since.</td>
-</tr>
-<tr>
-  <td><code>UK_composite_pmi.csv</code></td>
-  <td>S&amp;P Global / Markit Composite PMI</td>
-  <td class="mono">no free full-history API found</td>
-  <td><span class="badge badge-bad">NO VIABLE SOURCE</span> — no UK equivalent of ISM data was ever on FRED either.</td>
+  <td><code>USA_composite_pmi.csv</code> / <code>UK_composite_pmi.csv</code></td>
+  <td>investing.com economic-calendar pages</td>
+  <td class="mono">USA: investing.com/economic-calendar/s-p-global-composite-pmi-1492<br>UK: investing.com/economic-calendar/composite-pmi-1934</td>
+  <td><span class="badge badge-warn">SCRAPER WORKS, BUT SCOPE-LIMITED</span> — a real scraper (<code>fetch_recent_releases()</code> in <code>src/data/fetch_composite_pmi_wip.py</code>) was built and tested live against both pages. Finding: these pages render only the <b>last ~3-4 releases</b>, not full 2014-2024 history — confirmed live for both countries, and corroborated by another user's own comment on the USA page complaining about exactly this depth cut ("is it possible to keep past months inputs up... or at least more than just two updates"). No CSV/historical export exists on this page type (unlike investing.com's per-instrument price-history pages). Trading Economics' chart (JS/XHR-rendered, no data in static HTML) and the <code>danieleongari/investing_economic_indicators</code> GitHub repo (just an indicator-name→URL-ID lookup table) were also checked — neither solves bulk historical access without a paid API key or JS execution. <b>Net: the scraper is only useful as an incremental updater going forward</b>, appending each new monthly release once it appears; it cannot backfill history. Full 2014-2024 backfill still needs the manual fallback documented in the script (transcribing S&amp;P Global's own monthly press releases at pmi.spglobal.com, or a paid Market Intelligence subscription).</td>
 </tr>
 </table>
-<div class="note">Practical conclusion: no free, full-history API currently exists for Composite PMI on either side. investing.com remains the only documented option (manual export or scraping), consistent with the existing docstrings in fetch_fred.py / build_macro_panel.py.</div>
+<div class="note">Practical conclusion: both UK ONS replacements are technically ready to run (pending a human compare-before-swap step for CPI). Composite PMI remains the one series with no free full-history path on either side of the Atlantic — the new scraper improves "staying current" but does not change that.</div>
 
 <h2>6. Run log</h2>
 <div class="logmeta">

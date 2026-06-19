@@ -90,7 +90,7 @@ Each CSV is a release history with columns `date, realtime_start, value`.
 | `UK_gdp.csv` | UK | GDP | Quarterly | 274 | 2014-01-01 → 2020-07-01 | STALE — underlying Eurostat source discontinued, not a re-fetch fix |
 | `UK_cpi.csv` | UK | CPI (index level) | Monthly | 587 | 2014-04-01 → 2025-03-01 | STALE — ~15 months behind `USA_cpi.csv` |
 | `UK_central_bank_rate.csv` | UK | Bank of England Bank Rate | Monthly | 499 | 2014-08-01 → 2026-05-01 | OK |
-| `UK_current_account.csv` | UK | Current Account Balance | Quarterly | — | — | MISSING — no FRED ticker found |
+| `UK_current_account.csv` | UK | Current Account Balance | Quarterly | — | — | MISSING on FRED — ONS replacement script verified 2026-06-19, not yet run (see below) |
 | `USA_composite_pmi.csv` | USA | Composite PMI | — | — | — | MISSING — not on FRED |
 | `UK_composite_pmi.csv` | UK | Composite PMI | — | — | — | MISSING — not on FRED |
 
@@ -102,15 +102,27 @@ USA-OK/UK-not-OK split — three of the four FRED-backed indicators work on both
   2020-07-01 because its underlying Eurostat source was discontinued, not because the local
   copy is simply out of date.
 - **UK CPI — stale:** about 15 months behind the USA file. ONS series `D7BT` (dataset
-  `mm23`) is an unverified candidate replacement — see Section 5 of
-  `reports/macro_data_status.html`.
-- **UK current account — missing entirely:** no FRED ticker has been found. ONS series
-  `HBOP` (dataset `pnbp`) is an unverified candidate; a WIP fetch script targeting it is at
-  `src/data/fetch_current_account_uk_wip.py`.
+  `mm23`) is a candidate replacement; the ONS v0 API this project originally targeted is
+  permanently retired (confirmed via https://developer.ons.gov.uk/retirement/v0api/) — the
+  fetch script now targets the replacement v1 beta API instead. `src/data/fetch_cpi_uk_alt_wip.py`
+  writes to a **separate** file (`UK_cpi_ons_alt.csv`), not over `UK_cpi.csv` — see that
+  script's docstring for why the two series aren't a drop-in swap.
+- **UK current account — missing entirely on FRED:** no FRED ticker has been found. ONS
+  series `HBOP` (dataset `pnbp`) is the replacement; `src/data/fetch_current_account_uk_wip.py`
+  targets it via the same v1 beta API and its response schema was verified live on
+  2026-06-19 (see that script's docstring) — it has not yet been run to produce
+  `UK_current_account.csv`.
 - **Composite PMI — missing for BOTH USA and UK**, not a UK-only gap: not published on FRED
   for either block (the related ISM Manufacturing PMI series family was removed from FRED in
-  June 2016 at ISM's own request). No free full-history API has been found for either
-  country; a documentation stub is at `src/data/fetch_composite_pmi_wip.py`.
+  June 2016 at ISM's own request). `src/data/fetch_composite_pmi_wip.py` now contains a real,
+  working investing.com scraper (`fetch_recent_releases()`, verified live 2026-06-19 against
+  both target pages) — but it was discovered during that verification that investing.com's
+  economic-calendar pages only retain the **last ~3-4 releases**, not full history (confirmed
+  for both countries, and corroborated by another user's on-page comment about exactly this
+  cut). No free full-history API has been found for either country. The scraper is therefore
+  scoped as a **going-forward incremental updater only** — it cannot backfill 2014-2024; see
+  that script's docstring for the manual-fallback workflow still needed to establish the
+  historical base.
 - CPI YoY is not in the table above because it is derived in the panel step, not stored as a
   separate raw file.
 
@@ -162,8 +174,9 @@ Placeholder (`.gitkeep`). Three variants to be built (spec section 3):
 | `fetch_cpi.py` | Fetch USA/UK CPI release history |
 | `fetch_central_bank_rate.py` | Fetch Fed Funds Rate / BoE Bank Rate |
 | `fetch_current_account.py` | Fetch USA current-account balance (UK intentionally skipped — see docstring) |
-| `fetch_current_account_uk_wip.py` | **WIP, unverified** — UK current account from the ONS API (series `HBOP`, dataset `pnbp`); run `--raw-dump` first |
-| `fetch_composite_pmi_wip.py` | **WIP stub** — documents why Composite PMI has no free API for USA or UK; scaffolds a manual investing.com-export fallback |
+| `fetch_current_account_uk_wip.py` | **WIP, schema verified 2026-06-19** — UK current account from the ONS v1 beta API (series `HBOP`, dataset `pnbp`); writes `UK_current_account.csv` directly (no production file exists yet to conflict with) |
+| `fetch_cpi_uk_alt_wip.py` | **WIP, schema verified 2026-06-19** — alternative UK CPI from the ONS v1 beta API (series `D7BT`, dataset `mm23`); writes to `UK_cpi_ons_alt.csv`, a separate file from the production `UK_cpi.csv` — see docstring before swapping it in |
+| `fetch_composite_pmi_wip.py` | **WIP, real scraper verified 2026-06-19** — `fetch_recent_releases()` scrapes investing.com's economic-calendar pages for USA/UK Composite PMI; confirmed those pages only retain ~3-4 recent releases (not full history), so this is an incremental updater, not a backfill tool — see docstring for the manual-fallback workflow still needed for 2014-2024 history |
 | `__init__.py` | Package marker |
 
 The two `*_wip.py` scripts are deliberately separate from the four working `fetch_*.py`
