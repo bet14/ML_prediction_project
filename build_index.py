@@ -46,7 +46,7 @@ CATEGORIES = [
      "desc": "Research papers — click to open in browser"},
 ]
 
-LINKABLE_EXTS = {".html", ".pdf"}
+LINKABLE_EXTS = {".html", ".pdf", ".py", ".md", ".csv", ".jsonl"}
 
 
 # ── helpers ───────────────────────────────────────────────────

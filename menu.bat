@@ -53,11 +53,11 @@ echo  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo   [1] Update index + project status
 echo  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo.
-echo  Building file index...
-python build_index.py
-echo.
 echo  Generating project status report...
 python project_status.py
+echo.
+echo  Building file index (reads fresh project_status.html)...
+python build_index.py
 echo.
 echo  Opening index.html in browser...
 start "" "index.html"

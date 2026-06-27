@@ -68,14 +68,14 @@ Notes on the window:
 
 ---
 
-## Project Status (as of 2026-06-26)
+## Project Status (as of 2026-06-27)
 
 | Layer | Status |
 |---|---|
 | Macro raw data (FRED) | Mostly OK — see macro table below |
 | Macro panels (`data/interim/`) | 4/5 panels built (missing `composite_pmi_panel`) |
 | Forex raw data | 13 header-only placeholder CSVs — not yet fetched |
-| Equity raw data | 9 header-only placeholder CSVs — not yet fetched |
+| Equity raw data | **9/9 CSVs fetched** — 2014-01-02 → 2024-12-30, ~2,700 rows each |
 | Final training datasets (`data/processed/`) | Not yet built |
 | Model training | Not started |
 | Streamlit app | Not started |
@@ -181,19 +181,21 @@ For the live file-inventory snapshot, open `reports/macro_data_status.html` in a
 
 ### `data/raw/equity/` — Equity indices (yfinance)
 
-**9 header-only placeholder CSVs** created 2026-06-19 (columns `date, open, high, low, close, volume`).
-Not yet fetched — run `src/data/fetch_equity_wip.py` on a personal machine. A `.gitkeep` remains
-alongside the CSVs. Per the data spec (section 2.2):
+**9 CSVs fetched 2026-06-27** (columns `date, open, high, low, close, volume`), covering
+2014-01-02 → 2024-12-30. All 9 tickers resolved successfully, including `^FTAS`. Per the data
+spec (section 2.2):
 
 ```
-US:  USA_DJI.csv (^DJI), USA_NASDAQ_COMPOSITE.csv (^IXIC), USA_NASDAQ100.csv (^NDX),
-     USA_RUSSELL2000.csv (^RUT), USA_SP500.csv (^GSPC)
-UK:  UK_FTSE100.csv (^FTSE), UK_FTSE250.csv (^FTMC), UK_FTSE350.csv (^FTLC),
-     UK_FTSE_ALL_SHARE.csv (^FTAS)
+US:  USA_DJI.csv (^DJI, 2767 rows), USA_NASDAQ_COMPOSITE.csv (^IXIC, 2767),
+     USA_NASDAQ100.csv (^NDX, 2767), USA_RUSSELL2000.csv (^RUT, 2767), USA_SP500.csv (^GSPC, 2767)
+UK:  UK_FTSE100.csv (^FTSE, 2777), UK_FTSE250.csv (^FTMC, 2778),
+     UK_FTSE350.csv (^FTLC, 2697), UK_FTSE_ALL_SHARE.csv (^FTAS, 2778)
 ```
 
-`^FTAS` (FTSE All-Share) has the lowest confidence — spot-check it first. See
-`reports/equity_data_status.html` for the full per-ticker confidence table.
+Note: `fetch_equity_wip.py` required a one-line fix for yfinance ≥ 0.2.x — the `.history()`
+call returns a timezone-aware DatetimeIndex, so `tz_localize(None)` was replaced with
+`tz_convert(None)` (line 123). Without this fix, every index silently fails with a caught
+`TypeError` and no CSV is written.
 
 ### `data/interim/` — Merged macro panels
 
@@ -232,7 +234,7 @@ Placeholder (`.gitkeep`). Three variants to be built (spec section 3):
 | `fetch_cpi_uk_alt_wip.py` | **WIP** — alternative UK CPI via ONS v1 beta API; writes `UK_cpi_ons_alt.csv` |
 | `fetch_composite_pmi_wip.py` | **WIP** — investing.com scraper; incremental updater only, cannot backfill |
 | `fetch_forex_wip.py` | **WIP** — 13 forex pairs, `--source dukascopy|yfinance`; not yet run |
-| `fetch_equity_wip.py` | **WIP** — 9 equity indices via yfinance; not yet run |
+| `fetch_equity_wip.py` | 9 equity indices via yfinance — **fetched 2026-06-27**; run with `--start 2014-01-01 --end 2024-12-31 --append` |
 | `pipeline_log_common.py` | Shared logging helpers (`append_run_log`, `run_script`) used by all three pipeline scripts |
 | `__init__.py` | Package marker |
 
@@ -329,3 +331,4 @@ Scans files directly inside `References/`, `data/`, `notebooks/`, `models/`, `re
 | 6 | No project description, no Quick Start, no status summary | All three added |
 | 7 | Python version not mentioned | Added: requires Python ≥ 3.9 |
 | 8 | `requirements.txt` comment mentions DAX/VIX (not in data plan) | Flagged as outdated |
+| 9 | `menu.bat` option 1 ran `build_index.py` before `project_status.py` | Fixed: `project_status.py` must run first — `build_index.py` reads `reports/project_status.html` via `_parse_project_status()` to embed the dashboard; running it first would embed stale data |
