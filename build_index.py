@@ -9,6 +9,7 @@ Usage:
     python build_index.py
 """
 
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -336,6 +337,40 @@ a:hover{color:var(--accent2);text-decoration:underline;}
 .no-match{display:none;text-align:center;padding:32px 16px;
           color:var(--muted);font-size:15px;}
 
+/* dashboard */
+.dash-card{background:var(--surface);border:1px solid var(--border);
+           border-radius:10px;padding:18px 22px;margin-bottom:14px;
+           box-shadow:var(--shadow);}
+.dash-header{display:flex;justify-content:space-between;align-items:flex-start;
+             gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+.dash-pct{font-size:clamp(28px,6vw,38px);font-weight:800;line-height:1;flex-shrink:0;}
+.status-link{display:inline-block;padding:6px 14px;border-radius:8px;
+             background:var(--accent);color:#fff;font-size:13px;font-weight:600;
+             text-decoration:none;white-space:nowrap;align-self:center;}
+.status-link:hover{background:var(--accent2);color:#fff;text-decoration:none;}
+.progress-track{height:12px;background:var(--border);border-radius:99px;
+                overflow:hidden;margin-bottom:16px;}
+.progress-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+.dash-phase-grid{display:grid;gap:8px;
+                 grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+                 margin-top:4px;}
+.dash-phase-card{background:var(--surface2);border:1px solid var(--border);
+                 border-radius:8px;padding:10px 12px;}
+.dash-phase-name{font-size:12px;font-weight:600;margin-bottom:6px;line-height:1.3;}
+.dash-phase-stats{margin-top:4px;font-size:11px;color:var(--muted);}
+.mini-bar{height:5px;background:var(--border);border-radius:99px;overflow:hidden;}
+.mini-fill{height:100%;background:#22c55e;border-radius:99px;}
+.dash-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.recent-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;}
+.recent-tbl th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);
+               text-transform:uppercase;letter-spacing:.4px;padding:6px 10px;
+               border-bottom:1px solid var(--border);}
+.recent-tbl td{padding:6px 10px;border-bottom:1px solid var(--border);}
+.recent-tbl tbody tr:last-child td{border-bottom:none;}
+.recent-tbl tbody tr:hover{background:var(--surface2);}
+.recent-tbl .rc-folder{font-size:11px;color:var(--muted);}
+.recent-tbl .rc-mod{font-size:11px;color:var(--muted);white-space:nowrap;}
+
 footer{margin-top:28px;font-size:12px;color:var(--muted);
        border-top:1px solid var(--border);padding-top:12px;}
 code{background:var(--surface2);border:1px solid var(--border);
@@ -418,6 +453,114 @@ function sortTable(th){
 }
 """
 
+# ── dashboard helpers ─────────────────────────────────────────
+
+STATUS_PATH = PROJECT_ROOT / "reports" / "project_status.html"
+STATUS_REL  = "reports/project_status.html"   # relative link for cloned repos
+
+
+def _parse_project_status() -> dict | None:
+    """Extract progress data from reports/project_status.html via regex."""
+    if not STATUS_PATH.exists():
+        return None
+    try:
+        html = STATUS_PATH.read_text(encoding="utf-8")
+
+        m = re.search(r'class="pct-big"[^>]*>(\d+)%', html)
+        overall_pct = int(m.group(1)) if m else 0
+
+        m = re.search(r'class="muted">(\d+ of \d+ items complete[^<]*)<', html)
+        summary = m.group(1).strip() if m else ""
+
+        names     = re.findall(r'class="phase-card-name">\s*(.*?)\s*</div>', html, re.DOTALL)
+        fills     = [int(x) for x in re.findall(r'class="mini-fill"[^>]*style="width:(\d+)%"', html)]
+        stats_raw = re.findall(r'class="phase-card-stats">(.*?)</div>', html, re.DOTALL)
+        stats     = [re.sub(r'<[^>]+>', '', s).strip() for s in stats_raw]
+
+        phases = [
+            {"name": n, "pct": p, "stats": s}
+            for n, p, s in zip(names, fills, stats)
+        ]
+        return {"overall_pct": overall_pct, "summary": summary, "phases": phases}
+    except Exception:
+        return None
+
+
+def _dashboard_block(buckets: dict) -> str:
+    """Build the top dashboard: progress card + recent files card."""
+    status = _parse_project_status()
+
+    # collect all files for recent list
+    all_files = [f for lst in buckets.values() for f in lst]
+    recent = sorted(all_files, key=lambda e: e["mtime_ts"], reverse=True)[:5]
+
+    recent_rows = ""
+    for f in recent:
+        cell = (f'<a href="{f["rel"]}" target="_blank">{f["name"]}</a>'
+                if f["linkable"] else f["name"])
+        recent_rows += (
+            f'<tr>'
+            f'<td class="col-name">{cell}</td>'
+            f'<td class="rc-folder">{f["folder"]}</td>'
+            f'<td class="rc-mod">{f["modified"]}</td>'
+            f'</tr>\n'
+        )
+
+    # progress card
+    if status:
+        pct   = status["overall_pct"]
+        color = "#22c55e" if pct >= 70 else ("#d97706" if pct >= 40 else "#ef4444")
+        phase_cards = "".join(
+            f'<div class="dash-phase-card">'
+            f'<div class="dash-phase-name">{ph["name"]}</div>'
+            f'<div class="mini-bar"><div class="mini-fill" style="width:{ph["pct"]}%"></div></div>'
+            f'<div class="dash-phase-stats">{ph["stats"]}</div>'
+            f'</div>'
+            for ph in status["phases"]
+        )
+        progress_html = f"""
+  <div class="dash-card">
+    <div class="dash-header">
+      <div>
+        <h2>Project Progress</h2>
+        <p class="dash-sub">{status["summary"]}</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="dash-pct" style="color:{color}">{pct}%</span>
+        <a href="{STATUS_REL}" target="_blank" class="status-link">Full Status →</a>
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width:{pct}%;background:{color}"></div>
+    </div>
+    <div class="dash-phase-grid">{phase_cards}</div>
+  </div>"""
+    else:
+        progress_html = f"""
+  <div class="dash-card">
+    <div class="dash-header">
+      <h2>Project Progress</h2>
+      <a href="{STATUS_REL}" target="_blank" class="status-link">View Status →</a>
+    </div>
+    <p style="color:var(--muted);font-size:13px">
+      Run <code>python run_project_status.py</code> to generate the status report.
+    </p>
+  </div>"""
+
+    recent_card = f"""
+  <div class="dash-card">
+    <h2>Recently Modified</h2>
+    <table class="recent-tbl">
+      <thead><tr>
+        <th>File</th><th>Folder</th><th>Modified</th>
+      </tr></thead>
+      <tbody>{recent_rows}</tbody>
+    </table>
+  </div>"""
+
+    return progress_html + recent_card
+
+
 # ── main ─────────────────────────────────────────────────────
 
 def build() -> None:
@@ -425,8 +568,9 @@ def build() -> None:
     buckets = scan()
     total   = sum(len(v) for v in buckets.values())
 
-    sections = "".join(_section(cat, buckets[cat["key"]]) for cat in CATEGORIES)
-    stats    = _stats_bar(buckets)
+    sections  = "".join(_section(cat, buckets[cat["key"]]) for cat in CATEGORIES)
+    stats     = _stats_bar(buckets)
+    dashboard = _dashboard_block(buckets)
 
     html = f"""<!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -457,6 +601,8 @@ def build() -> None:
       <span class="icon-sun">☀️ Light</span>
     </button>
   </header>
+
+  {dashboard}
 
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
