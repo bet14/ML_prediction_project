@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Status — GBP/USD ML</title>
+  <script>
+    /* Prevent flash of wrong theme before CSS loads */
+    (function(){
+      var t = localStorage.getItem("theme") ||
+              (window.matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
+  <style>
+:root {
+  --bg:       #f1f5f9;
+  --surface:  #ffffff;
+  --surface2: #f8fafc;
+  --border:   #e2e8f0;
+  --text:     #0f172a;
+  --text2:    #475569;
+  --muted:    #64748b;
+  --shadow:   0 1px 4px rgba(0,0,0,.08);
+  --radius:   10px;
+  --prog-bg:  #e2e8f0;
+  --prog-fill:#22c55e;
+
+  --ok-bg:#f0fdf4;   --ok-fg:#15803d;   --ok-bd:#86efac;
+  --warn-bg:#fffbeb; --warn-fg:#92400e; --warn-bd:#fcd34d;
+  --hdr-bg:#fff7ed;  --hdr-fg:#c2410c;  --hdr-bd:#fdba74;
+  --miss-bg:#fef2f2; --miss-fg:#b91c1c; --miss-bd:#fca5a5;
+  --blk-bg:#f1f5f9;  --blk-fg:#475569;  --blk-bd:#cbd5e1;
+  --emp-bg:#faf5ff;  --emp-fg:#6d28d9;  --emp-bd:#c4b5fd;
+}
+
+[data-theme="dark"] {
+  --bg:       #0f172a;
+  --surface:  #1e293b;
+  --surface2: #0f172a;
+  --border:   #334155;
+  --text:     #f1f5f9;
+  --text2:    #cbd5e1;
+  --muted:    #94a3b8;
+  --shadow:   0 1px 4px rgba(0,0,0,.4);
+  --prog-bg:  #334155;
+  --prog-fill:#4ade80;
+
+  --ok-bg:#052e16;   --ok-fg:#4ade80;   --ok-bd:#166534;
+  --warn-bg:#1c1002; --warn-fg:#fbbf24; --warn-bd:#92400e;
+  --hdr-bg:#1c0900;  --hdr-fg:#fb923c;  --hdr-bd:#7c2d12;
+  --miss-bg:#1c0202; --miss-fg:#f87171; --miss-bd:#7f1d1d;
+  --blk-bg:#1e293b;  --blk-fg:#94a3b8;  --blk-bd:#334155;
+  --emp-bg:#1a0038;  --emp-fg:#a78bfa;  --emp-bd:#4c1d95;
+}
+
+*  { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       font-size:15px; line-height:1.5; transition:background .2s,color .2s; }
+
+.layout { max-width:1100px; margin:0 auto; padding:20px 16px 40px; }
+
+/* ── Header ── */
+.header { display:flex; justify-content:space-between; align-items:flex-start;
+          gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+h1 { font-size:clamp(18px,4vw,24px); font-weight:800; letter-spacing:-.3px; }
+.subtitle { color:var(--muted); font-size:13px; margin-top:3px; }
+
+.theme-btn { display:flex; align-items:center; gap:6px;
+             background:var(--surface); color:var(--text);
+             border:1px solid var(--border); border-radius:8px;
+             padding:8px 14px; font-size:14px; cursor:pointer;
+             white-space:nowrap; transition:background .15s; }
+.theme-btn:hover { background:var(--surface2); }
+
+/* Show/hide theme icons via CSS — no JS flash */
+[data-theme="light"] .icon-sun  { display:none; }
+[data-theme="dark"]  .icon-moon { display:none; }
+
+/* ── Cards ── */
+.card { background:var(--surface); border:1px solid var(--border);
+        border-radius:var(--radius); padding:20px 24px;
+        box-shadow:var(--shadow); margin-bottom:16px; }
+
+.section-title { font-size:17px; font-weight:700; margin:24px 0 10px; }
+
+h2 { font-size:17px; font-weight:700; }
+h3 { font-size:15px; font-weight:600; }
+
+/* ── Progress ── */
+.progress-header { display:flex; justify-content:space-between;
+                   align-items:flex-start; gap:12px; margin-bottom:12px; }
+.pct-big { font-size:clamp(28px,6vw,40px); font-weight:800; line-height:1; flex-shrink:0; }
+.progress-track { height:14px; background:var(--prog-bg); border-radius:99px; overflow:hidden; }
+.progress-fill  { height:100%; background:var(--prog-fill);
+                  border-radius:99px; transition:width .4s ease; }
+
+/* ── Phase summary grid ── */
+.phase-grid { display:grid; gap:10px;
+              grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); }
+.phase-card { background:var(--surface2); border:1px solid var(--border);
+              border-radius:8px; padding:12px 14px; }
+.phase-card-name  { font-size:13px; font-weight:600; color:var(--text);
+                    margin-bottom:8px; line-height:1.3; }
+.mini-bar  { height:6px; background:var(--prog-bg); border-radius:99px; overflow:hidden; }
+.mini-fill { height:100%; background:var(--prog-fill); border-radius:99px; }
+.phase-card-stats { margin-top:6px; font-size:12px; color:var(--muted); }
+.warn-count { color:#d97706; font-weight:600; }
+
+/* ── Phase detail (details/summary) ── */
+.phase-detail { border:1px solid var(--border); border-radius:var(--radius);
+                margin-bottom:12px; overflow:hidden; }
+.phase-summary { display:flex; align-items:center; gap:10px;
+                 padding:12px 16px; background:var(--surface);
+                 cursor:pointer; font-weight:600; font-size:15px;
+                 list-style:none; user-select:none; }
+.phase-summary::-webkit-details-marker { display:none; }
+.phase-summary:hover { background:var(--surface2); }
+.summary-arrow { font-size:11px; color:var(--muted); transition:transform .2s; flex-shrink:0; }
+details[open] .summary-arrow { transform:rotate(90deg); }
+
+/* ── Tables ── */
+.tbl-wrap { overflow-x:auto; }
+table  { width:100%; border-collapse:collapse; font-size:14px; min-width:540px; }
+thead tr { background:var(--surface2); }
+th { padding:8px 12px; text-align:left; font-size:12px; font-weight:600;
+     color:var(--muted); text-transform:uppercase; letter-spacing:.4px;
+     white-space:nowrap; border-bottom:1px solid var(--border); }
+td { padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr:hover { background:var(--surface2); }
+.no-data { color:var(--muted); padding:16px; text-align:center; }
+
+/* column widths */
+.col-label  { min-width:160px; }
+.col-status { white-space:nowrap; }
+.col-num    { text-align:right; font-family:monospace; white-space:nowrap; }
+.col-date   { font-family:monospace; font-size:12px; white-space:nowrap; }
+.col-mod    { font-size:12px; color:var(--muted); white-space:nowrap; }
+.col-note   { font-size:12px; min-width:140px; }
+
+/* ── Badges ── */
+.badge { display:inline-block; padding:2px 8px; border-radius:5px;
+         font-size:11px; font-weight:700; border:1px solid; white-space:nowrap; }
+.badge-ok   { background:var(--ok-bg);   color:var(--ok-fg);   border-color:var(--ok-bd); }
+.badge-warn { background:var(--warn-bg); color:var(--warn-fg); border-color:var(--warn-bd); }
+.badge-hdr  { background:var(--hdr-bg);  color:var(--hdr-fg);  border-color:var(--hdr-bd); }
+.badge-miss { background:var(--miss-bg); color:var(--miss-fg); border-color:var(--miss-bd); }
+.badge-blk  { background:var(--blk-bg);  color:var(--blk-fg);  border-color:var(--blk-bd); }
+.badge-emp  { background:var(--emp-bg);  color:var(--emp-fg);  border-color:var(--emp-bd); }
+
+.note-warn { color:var(--warn-fg); }
+.muted     { color:var(--muted); }
+
+/* ── Legend ── */
+.legend { display:flex; flex-wrap:wrap; gap:12px;
+          align-items:center; padding:16px 0 8px; font-size:13px; }
+
+/* ── Footer ── */
+.footer { margin-top:24px; font-size:12px; color:var(--muted);
+          border-top:1px solid var(--border); padding-top:12px; }
+code { background:var(--surface2); border:1px solid var(--border);
+       border-radius:4px; padding:1px 5px; font-size:12px; }
+
+/* ── Mobile ── */
+@media (max-width:600px) {
+  .layout { padding:12px 10px 32px; }
+  .card   { padding:14px 14px; }
+  .phase-grid { grid-template-columns:1fr 1fr; }
+  .progress-header { flex-direction:column; }
+  .pct-big { font-size:32px; }
+  h1 { font-size:18px; }
+  td, th { padding:7px 8px; }
+}
+@media (max-width:400px) {
+  .phase-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div>
+      <h1>GBP/USD Direction Prediction</h1>
+      <p class="subtitle">Project Status Dashboard · 2026-06-27 09:10:52</p>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
+      <span class="icon-moon">🌙 Dark</span>
+      <span class="icon-sun">☀️ Light</span>
+    </button>
+  </header>
+
+  <!-- ── Overall progress ── -->
+  <section class="card">
+    <div class="progress-header">
+      <div>
+        <h2>Overall Progress</h2>
+        <p class="muted">23 of 43 items complete (BLOCKED items excluded)</p>
+      </div>
+      <span class="pct-big" style="color:#d97706">53%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width:53%"></div>
+    </div>
+
+    <h3 style="margin:24px 0 12px">Phase Summary</h3>
+    <div class="phase-grid">
+    <div class="phase-card">
+      <div class="phase-card-name">Phase 1A — Macro Raw Data</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:75%"></div></div>
+      <div class="phase-card-stats">6/8 done <span class="warn-count">⚠ 2</span></div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-card-name">Phase 1B — Forex Raw (13 pairs · yfinance)</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:100%"></div></div>
+      <div class="phase-card-stats">13/13 done</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-card-name">Phase 1C — Equity Raw (9 indices · yfinance)</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
+      <div class="phase-card-stats">0/9 done</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-card-name">Phase 2 — Interim Panels (forward-filled daily)</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:67%"></div></div>
+      <div class="phase-card-stats">4/6 done</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-card-name">Phase 3 — Processed Datasets (ML-ready)</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
+      <div class="phase-card-stats">0/3 done</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-card-name">Phase 4 — Model Training</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
+      <div class="phase-card-stats">0/2 done</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-card-name">Phase 5 — Evaluation & Reporting</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
+      <div class="phase-card-stats">0/2 done</div>
+    </div>
+    </div>
+  </section>
+
+  <!-- ── Phase detail ── -->
+  <h2 class="section-title">Phase Details</h2>
+  
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
+      <span>Phase 1A — Macro Raw Data</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">USA GDP</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">458</td>
+            <td class="col-date">2014-01-01 → 2026-01-01</td>
+            <td class="col-mod">2026-06-19 17:25</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">USA CPI</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">1,011</td>
+            <td class="col-date">2014-01-01 → 2026-05-01</td>
+            <td class="col-mod">2026-06-19 17:25</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">USA Fed Funds Rate</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">12,608</td>
+            <td class="col-date">2014-01-01 → 2026-06-17</td>
+            <td class="col-mod">2026-06-19 17:26</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">USA Current Account</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">408</td>
+            <td class="col-date">2014-01-01 → 2025-10-01</td>
+            <td class="col-mod">2026-06-19 17:26</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">UK GDP</td>
+            <td class="col-status"><span class="badge badge-warn">WARN</span></td>
+            <td class="col-num">273</td>
+            <td class="col-date">2014-01-01 → 2020-07-01</td>
+            <td class="col-mod">2026-06-19 17:25</td>
+            <td class="col-note"><span class="note-warn">FRED series discontinued Jul-2020 — alternative source needed</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">UK CPI</td>
+            <td class="col-status"><span class="badge badge-warn">WARN</span></td>
+            <td class="col-num">586</td>
+            <td class="col-date">2014-04-01 → 2025-03-01</td>
+            <td class="col-mod">2026-06-19 17:25</td>
+            <td class="col-note"><span class="note-warn">Stale ~15 months — see UK_cpi_ons_alt.csv as replacement</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">UK CPI (ONS alt)</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">161</td>
+            <td class="col-date">2013-01-01 → 2026-05-01</td>
+            <td class="col-mod">2026-06-26 19:35</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">UK Current Account</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">52</td>
+            <td class="col-date">2013-01-01 → 2025-10-01</td>
+            <td class="col-mod">2026-06-26 19:33</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">USA Composite PMI</td>
+            <td class="col-status"><span class="badge badge-blk">BLOCKED</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"><span class="note-warn">No historical source — investing.com keeps only ~3-4 recent releases</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">UK Composite PMI</td>
+            <td class="col-status"><span class="badge badge-blk">BLOCKED</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"><span class="note-warn">No historical source — manual collection required</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
+      <span>Phase 1B — Forex Raw (13 pairs · yfinance)</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">GBP/USD  (target pair)</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,866</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">EUR/USD</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,866</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">EUR/GBP</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,867</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">AUD/USD</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,866</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">GBP/AUD</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,867</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">GBP/CAD</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,867</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">GBP/CHF</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,867</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">GBP/JPY</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,867</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">GBP/NZD</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,867</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">NZD/USD</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,866</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">USD/CAD</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,866</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">USD/CHF</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,866</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">USD/JPY</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,866</td>
+            <td class="col-date">2014-01-01 → 2024-12-30</td>
+            <td class="col-mod">2026-06-27 08:53</td>
+            <td class="col-note"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
+      <span>Phase 1C — Equity Raw (9 indices · yfinance)</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">S&P 500</td>
+            <td class="col-status"><span class="badge badge-hdr">HEADER ONLY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">2026-06-19 21:10</td>
+            <td class="col-note"><span class="note-warn">Header only — no data rows yet</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">Nasdaq Composite</td>
+            <td class="col-status"><span class="badge badge-hdr">HEADER ONLY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">2026-06-19 21:10</td>
+            <td class="col-note"><span class="note-warn">Header only — no data rows yet</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">Nasdaq 100</td>
+            <td class="col-status"><span class="badge badge-hdr">HEADER ONLY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">2026-06-19 21:10</td>
+            <td class="col-note"><span class="note-warn">Header only — no data rows yet</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">Dow Jones (DJI)</td>
+            <td class="col-status"><span class="badge badge-hdr">HEADER ONLY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">2026-06-19 21:10</td>
+            <td class="col-note"><span class="note-warn">Header only — no data rows yet</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">Russell 2000</td>
+            <td class="col-status"><span class="badge badge-hdr">HEADER ONLY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">2026-06-19 21:10</td>
+            <td class="col-note"><span class="note-warn">Header only — no data rows yet</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">FTSE 100</td>
+            <td class="col-status"><span class="badge badge-hdr">HEADER ONLY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">2026-06-19 21:10</td>
+            <td class="col-note"><span class="note-warn">Header only — no data rows yet</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">FTSE 250</td>
+            <td class="col-status"><span class="badge badge-hdr">HEADER ONLY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">2026-06-19 21:10</td>
+            <td class="col-note"><span class="note-warn">Header only — no data rows yet</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">FTSE 350</td>
+            <td class="col-status"><span class="badge badge-hdr">HEADER ONLY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">2026-06-19 21:11</td>
+            <td class="col-note"><span class="note-warn">Header only — no data rows yet</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">FTSE All-Share</td>
+            <td class="col-status"><span class="badge badge-hdr">HEADER ONLY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">2026-06-19 21:11</td>
+            <td class="col-note"><span class="note-warn">Header only — no data rows yet</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
+      <span>Phase 2 — Interim Panels (forward-filled daily)</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">GDP panel</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,870</td>
+            <td class="col-date">2014-01-01 → 2024-12-31</td>
+            <td class="col-mod">2026-06-27 08:12</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">CPI panel</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,870</td>
+            <td class="col-date">2014-01-01 → 2024-12-31</td>
+            <td class="col-mod">2026-06-27 08:12</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">Central Bank Rate panel</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,870</td>
+            <td class="col-date">2014-01-01 → 2024-12-31</td>
+            <td class="col-mod">2026-06-27 08:12</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">Current Account panel</td>
+            <td class="col-status"><span class="badge badge-ok">OK</span></td>
+            <td class="col-num">2,870</td>
+            <td class="col-date">2014-01-01 → 2024-12-31</td>
+            <td class="col-mod">2026-06-27 08:12</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">Forex panel</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">Equity panel</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
+      <span>Phase 3 — Processed Datasets (ML-ready)</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">Dataset 1 — Basic Daily (~130 cols)</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">Dataset 2 — 90-Day Lookback</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">Dataset 3 — Technical Indicators (~2000 cols)</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
+      <span>Phase 4 — Model Training</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">Trained models (.joblib / .pkl)</td>
+            <td class="col-status"><span class="badge badge-emp">EMPTY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"><span class="note-warn">Folder is empty</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">Bayesian search results</td>
+            <td class="col-status"><span class="badge badge-emp">EMPTY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"><span class="note-warn">Folder is empty</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
+      <span>Phase 5 — Evaluation & Reporting</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">Model comparison table</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">Backtest / feature plots</td>
+            <td class="col-status"><span class="badge badge-emp">EMPTY</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"><span class="note-warn">Folder is empty</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- ── Pipeline run history ── -->
+  <section class="card" style="margin-top:8px">
+    <h2 style="margin-bottom:16px">Recent Pipeline Runs</h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp (UTC)</th><th>Pipeline</th><th>Mode</th>
+            <th>Status</th><th>Steps OK</th><th>Elapsed</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+          <tr>
+            <td style="font-family:monospace;font-size:12px">2026-06-27 06:53:39</td>
+            <td><strong>forex</strong></td>
+            <td class="muted" style="font-size:13px">yfinance/append</td>
+            <td><span class="badge badge-ok">OK</span></td>
+            <td style="text-align:center">13/13</td>
+            <td style="text-align:right;font-family:monospace">4.2s</td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;font-size:12px">2026-06-27 06:46:17</td>
+            <td><strong>forex_chunked</strong></td>
+            <td class="muted" style="font-size:13px">dry-run</td>
+            <td><span class="badge badge-warn">WARN</span></td>
+            <td style="text-align:center">—/—</td>
+            <td style="text-align:right;font-family:monospace">—</td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;font-size:12px">2026-06-27 06:25:07</td>
+            <td><strong>equity</strong></td>
+            <td class="muted" style="font-size:13px">dry-run</td>
+            <td><span class="badge badge-ok">OK</span></td>
+            <td style="text-align:center">9/9</td>
+            <td style="text-align:right;font-family:monospace">6.3s</td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;font-size:12px">2026-06-27 06:25:07</td>
+            <td><strong>equity</strong></td>
+            <td class="muted" style="font-size:13px">dry-run</td>
+            <td><span class="badge badge-ok">OK</span></td>
+            <td style="text-align:center">9/9</td>
+            <td style="text-align:right;font-family:monospace">6.1s</td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;font-size:12px">2026-06-27 06:25:07</td>
+            <td><strong>equity</strong></td>
+            <td class="muted" style="font-size:13px">dry-run</td>
+            <td><span class="badge badge-ok">OK</span></td>
+            <td style="text-align:center">9/9</td>
+            <td style="text-align:right;font-family:monospace">6.2s</td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;font-size:12px">2026-06-27 06:25:07</td>
+            <td><strong>equity</strong></td>
+            <td class="muted" style="font-size:13px">dry-run</td>
+            <td><span class="badge badge-ok">OK</span></td>
+            <td style="text-align:center">9/9</td>
+            <td style="text-align:right;font-family:monospace">6.1s</td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;font-size:12px">2026-06-27 06:12:51</td>
+            <td><strong>macro</strong></td>
+            <td class="muted" style="font-size:13px">skip-fetch</td>
+            <td><span class="badge badge-ok">OK</span></td>
+            <td style="text-align:center">4/4</td>
+            <td style="text-align:right;font-family:monospace">—</td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;font-size:12px">2026-06-27 06:10:54</td>
+            <td><strong>macro</strong></td>
+            <td class="muted" style="font-size:13px">skip-fetch</td>
+            <td><span class="badge badge-miss">MISSING</span></td>
+            <td style="text-align:center">3/4</td>
+            <td style="text-align:right;font-family:monospace">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:8px;font-size:12px">
+      Source: reports\pipeline_run_log.jsonl
+    </p>
+  </section>
+
+  <!-- ── Legend ── -->
+  <div class="legend">
+    <span class="muted" style="font-size:13px">Legend:</span>
+    <span><span class="badge badge-ok">OK</span> <span class="muted">Sufficient data</span></span><span><span class="badge badge-warn">WARN</span> <span class="muted">Has data but stale or partial</span></span><span><span class="badge badge-hdr">HEADER ONLY</span> <span class="muted">File has header only — no rows</span></span><span><span class="badge badge-miss">MISSING</span> <span class="muted">File does not exist</span></span><span><span class="badge badge-blk">BLOCKED</span> <span class="muted">No data source available</span></span><span><span class="badge badge-emp">EMPTY</span> <span class="muted">Folder is empty</span></span>
+  </div>
+
+  <!-- ── Footer ── -->
+  <footer class="footer">
+    Run <code>python project_status.py</code> to refresh · Root: D:\Code\claude\Projects\Statistical_Analysis_Machine_Learning\ML_prediction_project
+  </footer>
+
+</div><!-- /layout -->
+
+<script>
+function toggleTheme() {
+  var html = document.documentElement;
+  var next = html.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  html.setAttribute("data-theme", next);
+  localStorage.setItem("theme", next);
+}
+</script>
+</body>
+</html>
