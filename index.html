@@ -1,227 +1,441 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ML Prediction Project</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: Arial, sans-serif;
-            background: #0d1117;
-            color: #c9d1d9;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 60px 20px;
-        }
-        h1 {
-            font-size: 2.2rem;
-            color: #58a6ff;
-            margin-bottom: 12px;
-        }
-        .subtitle {
-            color: #8b949e;
-            font-size: 1rem;
-            margin-bottom: 48px;
-        }
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 20px;
-            max-width: 900px;
-            width: 100%;
-        }
-        .card {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 10px;
-            padding: 24px;
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            color: #58a6ff;
-            margin-bottom: 8px;
-        }
-        .card p {
-            font-size: 0.9rem;
-            color: #8b949e;
-            line-height: 1.6;
-        }
-        .badge {
-            display: inline-block;
-            background: #21262d;
-            border: 1px solid #30363d;
-            border-radius: 20px;
-            padding: 3px 10px;
-            font-size: 0.75rem;
-            color: #58a6ff;
-            margin-top: 10px;
-            margin-right: 4px;
-        }
-        .file-list {
-            margin-top: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .file-link {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #21262d;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 8px 12px;
-            color: #58a6ff;
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: border-color 0.2s;
-        }
-        .file-link:hover { border-color: #58a6ff; }
-        .file-icon { font-size: 1rem; }
-        footer {
-            margin-top: 60px;
-            color: #484f58;
-            font-size: 0.8rem;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Index — GBP/USD ML Project</title>
+  <script>
+    /* prevent theme flash */
+    (function(){
+      var t=localStorage.getItem("theme")||
+            (window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+      document.documentElement.setAttribute("data-theme",t);
+    })();
+  </script>
+  <style>
+:root{
+  --bg:#f1f5f9;--surface:#fff;--surface2:#f8fafc;
+  --border:#e2e8f0;--text:#0f172a;--muted:#64748b;
+  --accent:#3b82f6;--accent2:#1d4ed8;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+  --th-bg:#f1f5f9;
+}
+[data-theme="dark"]{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#162032;
+  --border:#334155;--text:#f1f5f9;--muted:#94a3b8;
+  --accent:#60a5fa;--accent2:#93c5fd;
+  --shadow:0 1px 4px rgba(0,0,0,.4);
+  --th-bg:#162032;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);
+     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     font-size:15px;line-height:1.5;transition:background .2s,color .2s;}
+.layout{max-width:1040px;margin:0 auto;padding:24px 16px 48px;}
+
+/* header */
+header{display:flex;justify-content:space-between;align-items:flex-start;
+       gap:12px;flex-wrap:wrap;margin-bottom:20px;}
+h1{font-size:clamp(18px,4vw,24px);font-weight:800;letter-spacing:-.3px;}
+.subtitle{color:var(--muted);font-size:13px;margin-top:3px;}
+.theme-btn{background:var(--surface);color:var(--text);
+           border:1px solid var(--border);border-radius:8px;
+           padding:7px 14px;font-size:14px;cursor:pointer;white-space:nowrap;
+           transition:background .15s;}
+.theme-btn:hover{background:var(--surface2);}
+[data-theme="light"] .icon-sun {display:none;}
+[data-theme="dark"]  .icon-moon{display:none;}
+
+/* search */
+.search-wrap{position:relative;margin-bottom:16px;}
+.search-wrap input{width:100%;padding:10px 16px 10px 40px;
+  border:1px solid var(--border);border-radius:8px;
+  background:var(--surface);color:var(--text);font-size:15px;outline:none;
+  transition:border .15s;}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);
+             color:var(--muted);pointer-events:none;}
+
+/* stats bar */
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;
+       background:var(--surface);border:1px solid var(--border);
+       border-radius:10px;padding:13px 18px;box-shadow:var(--shadow);}
+.stat{font-size:14px;color:var(--muted);}
+.stat b{color:var(--text);}
+
+/* sections */
+.section{border:1px solid var(--border);border-radius:10px;
+         margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.section-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+              padding:12px 16px;background:var(--surface);
+              cursor:pointer;list-style:none;user-select:none;}
+.section-head::-webkit-details-marker{display:none;}
+.section-head:hover{background:var(--surface2);}
+.arrow{font-size:11px;color:var(--muted);transition:transform .2s;flex-shrink:0;}
+details[open] .arrow{transform:rotate(90deg);}
+.sec-icon{font-size:18px;flex-shrink:0;}
+.sec-label{font-weight:700;font-size:15px;}
+.sec-count{background:var(--surface2);border:1px solid var(--border);
+           border-radius:20px;padding:1px 9px;font-size:12px;color:var(--muted);}
+.sec-desc{font-size:13px;color:var(--muted);}
+
+/* table */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+thead tr{background:var(--th-bg);}
+th{padding:8px 12px;text-align:left;font-size:11px;font-weight:600;
+   color:var(--muted);text-transform:uppercase;letter-spacing:.4px;
+   border-bottom:2px solid var(--border);white-space:nowrap;
+   position:sticky;top:0;background:var(--th-bg);z-index:1;}
+
+/* sortable headers */
+th.sortable{cursor:pointer;transition:color .15s;}
+th.sortable:hover{color:var(--accent);}
+th.sorted-asc,th.sorted-desc{color:var(--accent);}
+.sort-icon{display:inline-block;margin-left:3px;font-size:12px;
+           opacity:.45;transition:opacity .15s;}
+th.sortable:hover .sort-icon{opacity:.8;}
+th.sorted-asc .sort-icon,th.sorted-desc .sort-icon{opacity:1;}
+
+td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+tr.hidden{display:none;}
+.empty{color:var(--muted);text-align:center;padding:14px;}
+
+/* columns */
+.col-name  {min-width:160px;}
+.col-folder{font-size:12px;color:var(--muted);min-width:120px;}
+.col-size  {text-align:right;font-family:monospace;font-size:12px;white-space:nowrap;}
+.col-rows  {text-align:right;font-family:monospace;font-size:12px;white-space:nowrap;}
+.col-mod   {font-size:12px;color:var(--muted);white-space:nowrap;}
+
+a{color:var(--accent);text-decoration:none;}
+a:hover{color:var(--accent2);text-decoration:underline;}
+
+.no-match{display:none;text-align:center;padding:32px 16px;
+          color:var(--muted);font-size:15px;}
+
+footer{margin-top:28px;font-size:12px;color:var(--muted);
+       border-top:1px solid var(--border);padding-top:12px;}
+code{background:var(--surface2);border:1px solid var(--border);
+     border-radius:4px;padding:1px 5px;font-size:12px;}
+
+@media(max-width:600px){
+  .sec-desc{display:none;}
+  .layout{padding:12px 10px 32px;}
+  td,th{padding:7px 8px;}
+  h1{font-size:18px;}
+}
+</style>
 </head>
 <body>
-    <h1>ML Prediction Project</h1>
-    <p class="subtitle">Master Data Science — EPITA Paris</p>
+<div class="layout">
 
-    <div class="card-grid">
-        <div class="card">
-            <h2>Objectif</h2>
-            <p>Collecter des données multi-sources, analyser et construire un pipeline de prédiction ML avec interface utilisateur.</p>
-            <span class="badge">Data Collection</span>
-            <span class="badge">Modeling</span>
-        </div>
-        <div class="card">
-            <h2>Pipeline</h2>
-            <p>Acquisition des données → EDA → Feature Engineering → Training → Evaluation → Déploiement Streamlit.</p>
-            <span class="badge">Scikit-learn</span>
-            <span class="badge">Streamlit</span>
-        </div>
-        <div class="card">
-            <h2>Stack</h2>
-            <p>Python, Pandas, Scikit-learn, Matplotlib/Seaborn, Streamlit. Données collectées via API et web scraping.</p>
-            <span class="badge">Python</span>
-            <span class="badge">API</span>
-            <span class="badge">Scraping</span>
-        </div>
-        <div class="card">
-            <h2>Références</h2>
-            <p>Analyse de prédiction EUR/USD Forex et autres études de cas de machine learning appliqué.</p>
-            <div class="file-list">
-                <a class="file-link" href="References/eurusd-forex-prediction.html" target="_blank">
-                    <span class="file-icon">&#128196;</span> eurusd-forex-prediction.html
-                </a>
-                <a class="file-link" href="References/predict eurusd.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> predict eurusd.pdf
-                </a>
-            </div>
-        </div>
-    <!-- AUTO-FOLDERS-START -->
-        <div class="card" id="folder-References">
-            <h2>Références</h2>
-            <div class="file-list">
-                <a class="file-link" href="References/01_AML_Combating_Money_Laundering_Using_AI.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 01_AML_Combating_Money_Laundering_Using_AI.pdf
-                </a>
-                <a class="file-link" href="References/02_FX_Statistical_Forecasting_Exchange_Rates_Review.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 02_FX_Statistical_Forecasting_Exchange_Rates_Review.pdf
-                </a>
-                <a class="file-link" href="References/03_FX_Forecasting_Wavelets_Neural_Networks.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 03_FX_Forecasting_Wavelets_Neural_Networks.pdf
-                </a>
-                <a class="file-link" href="References/04_FX_LSTM_Volatility_Forecasting_Deep_Learning.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 04_FX_LSTM_Volatility_Forecasting_Deep_Learning.pdf
-                </a>
-                <a class="file-link" href="References/05_ML_Course_Material_Introduction.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 05_ML_Course_Material_Introduction.pdf
-                </a>
-                <a class="file-link" href="References/06_Admin_Affiliation_Document.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 06_Admin_Affiliation_Document.pdf
-                </a>
-                <a class="file-link" href="References/07_FX_Deep_Networks_Direction_Prediction.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 07_FX_Deep_Networks_Direction_Prediction.pdf
-                </a>
-                <a class="file-link" href="References/08_AML_GAN_Data_Augmentation_Imbalanced.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 08_AML_GAN_Data_Augmentation_Imbalanced.pdf
-                </a>
-                <a class="file-link" href="References/09_FX_ML_Forecasting_Thesis.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 09_FX_ML_Forecasting_Thesis.pdf
-                </a>
-                <a class="file-link" href="References/10_FX_EURUSD_ML_Direction_Prediction.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 10_FX_EURUSD_ML_Direction_Prediction.pdf
-                </a>
-                <a class="file-link" href="References/11_FX_LSTM_Direction_Technical_Indicators.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> 11_FX_LSTM_Direction_Technical_Indicators.pdf
-                </a>
-                <a class="file-link" href="References/CLAUDE.md" target="_blank">
-                    <span class="file-icon">&#128196;</span> CLAUDE.md
-                </a>
-                <a class="file-link" href="References/eurusd-forex-prediction.html" target="_blank">
-                    <span class="file-icon">&#128196;</span> eurusd-forex-prediction.html
-                </a>
-                <a class="file-link" href="References/GBPUSD_ML_data_requirements_spec.md" target="_blank">
-                    <span class="file-icon">&#128196;</span> GBPUSD_ML_data_requirements_spec.md
-                </a>
-                <a class="file-link" href="References/Predicting_Forex_Currency_Fluctuations.pdf" target="_blank">
-                    <span class="file-icon">&#128196;</span> Predicting_Forex_Currency_Fluctuations.pdf
-                </a>
-            </div>
-        </div>
-        <div class="card" id="folder-data">
-            <h2>Données</h2>
-            <div class="file-list">
-                <a class="file-link" href="data/README.md" target="_blank">
-                    <span class="file-icon">&#128196;</span> README.md
-                </a>
-            </div>
-        </div>
-        <div class="card" id="folder-notebooks">
-            <h2>Notebooks</h2>
-            <div class="file-list">
-                <a class="file-link" href="notebooks/README.md" target="_blank">
-                    <span class="file-icon">&#128196;</span> README.md
-                </a>
-            </div>
-        </div>
-        <div class="card" id="folder-models">
-            <h2>Modèles</h2>
-            <div class="file-list">
-                <a class="file-link" href="models/README.md" target="_blank">
-                    <span class="file-icon">&#128196;</span> README.md
-                </a>
-            </div>
-        </div>
-        <div class="card" id="folder-reports">
-            <h2>Rapports</h2>
-            <div class="file-list">
-                <a class="file-link" href="reports/equity_data_status.html" target="_blank">
-                    <span class="file-icon">&#128196;</span> equity_data_status.html
-                </a>
-                <a class="file-link" href="reports/forex_data_status.html" target="_blank">
-                    <span class="file-icon">&#128196;</span> forex_data_status.html
-                </a>
-                <a class="file-link" href="reports/macro_data_status.html" target="_blank">
-                    <span class="file-icon">&#128196;</span> macro_data_status.html
-                </a>
-                <a class="file-link" href="reports/project_status.html" target="_blank">
-                    <span class="file-icon">&#128196;</span> project_status.html
-                </a>
-                <a class="file-link" href="reports/README.md" target="_blank">
-                    <span class="file-icon">&#128196;</span> README.md
-                </a>
-            </div>
-        </div>
-        <!-- AUTO-FOLDERS-END -->
+  <header>
+    <div>
+      <h1>GBP/USD ML Prediction — File Index</h1>
+      <p class="subtitle">107 files · Generated 2026-06-27 09:23:44 · Default sort: most recently modified</p>
     </div>
+    <button class="theme-btn" onclick="toggleTheme()">
+      <span class="icon-moon">🌙 Dark</span>
+      <span class="icon-sun">☀️ Light</span>
+    </button>
+  </header>
 
-    <footer>branch_lee — ML_prediction_project — last push: 2026-06-27 09:11</footer>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input id="search" type="search"
+           placeholder="Filter by file name or folder…" autocomplete="off">
+  </div>
+
+  <div class="stats"><span class="stat">🌐 <b>8</b> HTML</span> · <span class="stat">📊 <b>35</b> Data</span> · <span class="stat">🐍 <b>38</b> Python</span> · <span class="stat">📄 <b>13</b> Markdown</span> · <span class="stat">📋 <b>1</b> Logs</span> · <span class="stat">📕 <b>12</b> PDF</span></div>
+  <p id="no-match" class="no-match">No files match your search.</p>
+
+  
+  <details class="section" open>
+    <summary class="section-head">
+      <span class="arrow">▶</span>
+      <span class="sec-icon">🌐</span>
+      <span class="sec-label">HTML</span>
+      <span class="sec-count">8 files</span>
+      <span class="sec-desc">Reports & dashboards — click to open in browser</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table style="min-width:480px">
+        <thead><tr><th class="col-name sortable" data-col="0" onclick="sortTable(this)" style="text-align:left">File <span class="sort-icon">↕</span></th><th class="col-folder sortable" data-col="1" onclick="sortTable(this)" style="text-align:left">Folder <span class="sort-icon">↕</span></th><th class="col-size sortable" data-col="2" onclick="sortTable(this)" style="text-align:right">Size <span class="sort-icon">↕</span></th><th class="col-mod sortable sorted-desc" data-col="3" onclick="sortTable(this)" style="text-align:left">Modified <span class="sort-icon">↓</span></th></tr></thead>
+        <tbody class="sec-body" data-cat="html">
+<tr data-search="project_status.html reports"><td class="col-name"><a href="reports/project_status.html" target="_blank">project_status.html</a></td><td class="col-folder">reports</td><td class="col-size" data-val="38213">37.3 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="equity_data_status.html reports"><td class="col-name"><a href="reports/equity_data_status.html" target="_blank">equity_data_status.html</a></td><td class="col-folder">reports</td><td class="col-size" data-val="9984">9.8 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="forex_data_status.html reports"><td class="col-name"><a href="reports/forex_data_status.html" target="_blank">forex_data_status.html</a></td><td class="col-folder">reports</td><td class="col-size" data-val="12850">12.5 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="macro_data_status.html reports"><td class="col-name"><a href="reports/macro_data_status.html" target="_blank">macro_data_status.html</a></td><td class="col-folder">reports</td><td class="col-size" data-val="24494">23.9 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="eurusd_data_pipeline_erd.html (root)"><td class="col-name"><a href="eurusd_data_pipeline_erd.html" target="_blank">eurusd_data_pipeline_erd.html</a></td><td class="col-folder">(root)</td><td class="col-size" data-val="3313">3.2 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="checklist_en.html (root)"><td class="col-name"><a href="checklist_en.html" target="_blank">checklist_en.html</a></td><td class="col-folder">(root)</td><td class="col-size" data-val="19097">18.6 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="working_plan.html (root)"><td class="col-name"><a href="working_plan.html" target="_blank">working_plan.html</a></td><td class="col-folder">(root)</td><td class="col-size" data-val="51894">50.7 KB</td><td class="col-mod"  data-val="2026-06-11">2026-06-11</td></tr>
+<tr data-search="eurusd-forex-prediction.html references"><td class="col-name"><a href="References/eurusd-forex-prediction.html" target="_blank">eurusd-forex-prediction.html</a></td><td class="col-folder">References</td><td class="col-size" data-val="52085">50.9 KB</td><td class="col-mod"  data-val="2026-06-09">2026-06-09</td></tr>
+
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="section" open>
+    <summary class="section-head">
+      <span class="arrow">▶</span>
+      <span class="sec-icon">📊</span>
+      <span class="sec-label">Data</span>
+      <span class="sec-count">35 files</span>
+      <span class="sec-desc">CSV data files (raw, interim, processed)</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table style="min-width:580px">
+        <thead><tr><th class="col-name sortable" data-col="0" onclick="sortTable(this)" style="text-align:left">File <span class="sort-icon">↕</span></th><th class="col-folder sortable" data-col="1" onclick="sortTable(this)" style="text-align:left">Folder <span class="sort-icon">↕</span></th><th class="col-rows sortable" data-col="2" onclick="sortTable(this)" style="text-align:right">Rows <span class="sort-icon">↕</span></th><th class="col-size sortable" data-col="3" onclick="sortTable(this)" style="text-align:right">Size <span class="sort-icon">↕</span></th><th class="col-mod sortable sorted-desc" data-col="4" onclick="sortTable(this)" style="text-align:left">Modified <span class="sort-icon">↓</span></th></tr></thead>
+        <tbody class="sec-body" data-cat="data">
+<tr data-search="usd_jpy.csv data/raw/forex"><td class="col-name">USD_JPY.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2866" style="text-align:right">2,866</td><td class="col-size" data-val="253948">248.0 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="usd_chf.csv data/raw/forex"><td class="col-name">USD_CHF.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2866" style="text-align:right">2,866</td><td class="col-size" data-val="256346">250.3 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="usd_cad.csv data/raw/forex"><td class="col-name">USD_CAD.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2866" style="text-align:right">2,866</td><td class="col-size" data-val="255108">249.1 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="nzd_usd.csv data/raw/forex"><td class="col-name">NZD_USD.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2866" style="text-align:right">2,866</td><td class="col-size" data-val="256478">250.5 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="gbp_usd.csv data/raw/forex"><td class="col-name">GBP_USD.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2866" style="text-align:right">2,866</td><td class="col-size" data-val="254982">249.0 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="gbp_nzd.csv data/raw/forex"><td class="col-name">GBP_NZD.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2867" style="text-align:right">2,867</td><td class="col-size" data-val="253995">248.0 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="gbp_jpy.csv data/raw/forex"><td class="col-name">GBP_JPY.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2867" style="text-align:right">2,867</td><td class="col-size" data-val="251865">246.0 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="gbp_chf.csv data/raw/forex"><td class="col-name">GBP_CHF.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2867" style="text-align:right">2,867</td><td class="col-size" data-val="255278">249.3 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="gbp_cad.csv data/raw/forex"><td class="col-name">GBP_CAD.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2867" style="text-align:right">2,867</td><td class="col-size" data-val="254958">249.0 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="gbp_aud.csv data/raw/forex"><td class="col-name">GBP_AUD.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2867" style="text-align:right">2,867</td><td class="col-size" data-val="255046">249.1 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="eur_gbp.csv data/raw/forex"><td class="col-name">EUR_GBP.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2867" style="text-align:right">2,867</td><td class="col-size" data-val="256537">250.5 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="eur_usd.csv data/raw/forex"><td class="col-name">EUR_USD.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2866" style="text-align:right">2,866</td><td class="col-size" data-val="255196">249.2 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="aud_usd.csv data/raw/forex"><td class="col-name">AUD_USD.csv</td><td class="col-folder">data/raw/forex</td><td class="col-rows" data-val="2866" style="text-align:right">2,866</td><td class="col-size" data-val="256514">250.5 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="current_account_panel.csv data/interim"><td class="col-name">current_account_panel.csv</td><td class="col-folder">data/interim</td><td class="col-rows" data-val="2870" style="text-align:right">2,870</td><td class="col-size" data-val="81001">79.1 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="central_bank_rate_panel.csv data/interim"><td class="col-name">central_bank_rate_panel.csv</td><td class="col-folder">data/interim</td><td class="col-rows" data-val="2870" style="text-align:right">2,870</td><td class="col-size" data-val="188988">184.6 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="cpi_panel.csv data/interim"><td class="col-name">cpi_panel.csv</td><td class="col-folder">data/interim</td><td class="col-rows" data-val="2870" style="text-align:right">2,870</td><td class="col-size" data-val="273734">267.3 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="gdp_panel.csv data/interim"><td class="col-name">gdp_panel.csv</td><td class="col-folder">data/interim</td><td class="col-rows" data-val="2870" style="text-align:right">2,870</td><td class="col-size" data-val="107301">104.8 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="uk_cpi_ons_alt.csv data/raw/macro"><td class="col-name">UK_cpi_ons_alt.csv</td><td class="col-folder">data/raw/macro</td><td class="col-rows" data-val="161" style="text-align:right">161</td><td class="col-size" data-val="7089">6.9 KB</td><td class="col-mod"  data-val="2026-06-26">2026-06-26</td></tr>
+<tr data-search="uk_current_account.csv data/raw/macro"><td class="col-name">UK_current_account.csv</td><td class="col-folder">data/raw/macro</td><td class="col-rows" data-val="52" style="text-align:right">52</td><td class="col-size" data-val="2356">2.3 KB</td><td class="col-mod"  data-val="2026-06-26">2026-06-26</td></tr>
+<tr data-search="uk_ftse_all_share.csv data/raw/equity"><td class="col-name">UK_FTSE_ALL_SHARE.csv</td><td class="col-folder">data/raw/equity</td><td class="col-rows" data-val="0" style="text-align:right">0</td><td class="col-size" data-val="32">32 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="uk_ftse350.csv data/raw/equity"><td class="col-name">UK_FTSE350.csv</td><td class="col-folder">data/raw/equity</td><td class="col-rows" data-val="0" style="text-align:right">0</td><td class="col-size" data-val="32">32 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="uk_ftse250.csv data/raw/equity"><td class="col-name">UK_FTSE250.csv</td><td class="col-folder">data/raw/equity</td><td class="col-rows" data-val="0" style="text-align:right">0</td><td class="col-size" data-val="32">32 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="uk_ftse100.csv data/raw/equity"><td class="col-name">UK_FTSE100.csv</td><td class="col-folder">data/raw/equity</td><td class="col-rows" data-val="0" style="text-align:right">0</td><td class="col-size" data-val="32">32 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="usa_sp500.csv data/raw/equity"><td class="col-name">USA_SP500.csv</td><td class="col-folder">data/raw/equity</td><td class="col-rows" data-val="0" style="text-align:right">0</td><td class="col-size" data-val="32">32 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="usa_russell2000.csv data/raw/equity"><td class="col-name">USA_RUSSELL2000.csv</td><td class="col-folder">data/raw/equity</td><td class="col-rows" data-val="0" style="text-align:right">0</td><td class="col-size" data-val="32">32 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="usa_nasdaq100.csv data/raw/equity"><td class="col-name">USA_NASDAQ100.csv</td><td class="col-folder">data/raw/equity</td><td class="col-rows" data-val="0" style="text-align:right">0</td><td class="col-size" data-val="32">32 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="usa_nasdaq_composite.csv data/raw/equity"><td class="col-name">USA_NASDAQ_COMPOSITE.csv</td><td class="col-folder">data/raw/equity</td><td class="col-rows" data-val="0" style="text-align:right">0</td><td class="col-size" data-val="32">32 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="usa_dji.csv data/raw/equity"><td class="col-name">USA_DJI.csv</td><td class="col-folder">data/raw/equity</td><td class="col-rows" data-val="0" style="text-align:right">0</td><td class="col-size" data-val="32">32 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="usa_current_account.csv data/raw/macro"><td class="col-name">USA_current_account.csv</td><td class="col-folder">data/raw/macro</td><td class="col-rows" data-val="408" style="text-align:right">408</td><td class="col-size" data-val="13385">13.1 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="uk_central_bank_rate.csv data/raw/macro"><td class="col-name">UK_central_bank_rate.csv</td><td class="col-folder">data/raw/macro</td><td class="col-rows" data-val="498" style="text-align:right">498</td><td class="col-size" data-val="14840">14.5 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="usa_central_bank_rate.csv data/raw/macro"><td class="col-name">USA_central_bank_rate.csv</td><td class="col-folder">data/raw/macro</td><td class="col-rows" data-val="12608" style="text-align:right">12,608</td><td class="col-size" data-val="351501">343.3 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="uk_cpi.csv data/raw/macro"><td class="col-name">UK_cpi.csv</td><td class="col-folder">data/raw/macro</td><td class="col-rows" data-val="586" style="text-align:right">586</td><td class="col-size" data-val="18975">18.5 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="usa_cpi.csv data/raw/macro"><td class="col-name">USA_cpi.csv</td><td class="col-folder">data/raw/macro</td><td class="col-rows" data-val="1011" style="text-align:right">1,011</td><td class="col-size" data-val="31260">30.5 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="uk_gdp.csv data/raw/macro"><td class="col-name">UK_gdp.csv</td><td class="col-folder">data/raw/macro</td><td class="col-rows" data-val="273" style="text-align:right">273</td><td class="col-size" data-val="8763">8.6 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="usa_gdp.csv data/raw/macro"><td class="col-name">USA_gdp.csv</td><td class="col-folder">data/raw/macro</td><td class="col-rows" data-val="458" style="text-align:right">458</td><td class="col-size" data-val="14961">14.6 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="section" open>
+    <summary class="section-head">
+      <span class="arrow">▶</span>
+      <span class="sec-icon">🐍</span>
+      <span class="sec-label">Python</span>
+      <span class="sec-count">38 files</span>
+      <span class="sec-desc">Fetch, feature, model and pipeline scripts</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table style="min-width:480px">
+        <thead><tr><th class="col-name sortable" data-col="0" onclick="sortTable(this)" style="text-align:left">File <span class="sort-icon">↕</span></th><th class="col-folder sortable" data-col="1" onclick="sortTable(this)" style="text-align:left">Folder <span class="sort-icon">↕</span></th><th class="col-size sortable" data-col="2" onclick="sortTable(this)" style="text-align:right">Size <span class="sort-icon">↕</span></th><th class="col-mod sortable sorted-desc" data-col="3" onclick="sortTable(this)" style="text-align:left">Modified <span class="sort-icon">↓</span></th></tr></thead>
+        <tbody class="sec-body" data-cat="python">
+<tr data-search="build_index.py (root)"><td class="col-name">build_index.py</td><td class="col-folder">(root)</td><td class="col-size" data-val="17828">17.4 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="project_status.py (root)"><td class="col-name">project_status.py</td><td class="col-folder">(root)</td><td class="col-size" data-val="30740">30.0 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_forex_chunked.py src/data"><td class="col-name">fetch_forex_chunked.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="21094">20.6 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="panel_common.py src/features"><td class="col-name">panel_common.py</td><td class="col-folder">src/features</td><td class="col-size" data-val="3172">3.1 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="run_fred_pipeline.py (root)"><td class="col-name">run_fred_pipeline.py</td><td class="col-folder">(root)</td><td class="col-size" data-val="5373">5.2 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_uk_current_account.py src/data"><td class="col-name">fetch_uk_current_account.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="6096">6.0 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_usa_current_account.py src/data"><td class="col-name">fetch_usa_current_account.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="2918">2.8 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_uk_central_bank_rate.py src/data"><td class="col-name">fetch_uk_central_bank_rate.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="3260">3.2 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_usa_central_bank_rate.py src/data"><td class="col-name">fetch_usa_central_bank_rate.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="3225">3.1 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_uk_cpi.py src/data"><td class="col-name">fetch_uk_cpi.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="3689">3.6 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_usa_cpi.py src/data"><td class="col-name">fetch_usa_cpi.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="3062">3.0 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_uk_gdp.py src/data"><td class="col-name">fetch_uk_gdp.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="3630">3.5 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_usa_gdp.py src/data"><td class="col-name">fetch_usa_gdp.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="2861">2.8 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fred_common.py src/data"><td class="col-name">fred_common.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="5614">5.5 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="pipeline_log_common.py src/data"><td class="col-name">pipeline_log_common.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="6071">5.9 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="fetch_forex_wip - test.py src/data"><td class="col-name">fetch_forex_wip - test.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="26917">26.3 KB</td><td class="col-mod"  data-val="2026-06-26">2026-06-26</td></tr>
+<tr data-search="fetch_equity_wip.py src/data"><td class="col-name">fetch_equity_wip.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="10647">10.4 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="fetch_forex_wip.py src/data"><td class="col-name">fetch_forex_wip.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="19749">19.3 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="fetch_composite_pmi_wip.py src/data"><td class="col-name">fetch_composite_pmi_wip.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="12082">11.8 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="fetch_cpi_uk_alt_wip.py src/data"><td class="col-name">fetch_cpi_uk_alt_wip.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="7865">7.7 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="fetch_current_account_uk_wip.py src/data"><td class="col-name">fetch_current_account_uk_wip.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="6430">6.3 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="process_composite_pmi.py src/features"><td class="col-name">process_composite_pmi.py</td><td class="col-folder">src/features</td><td class="col-size" data-val="2701">2.6 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="fetch_current_account.py src/data"><td class="col-name">fetch_current_account.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="2510">2.5 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="fetch_central_bank_rate.py src/data"><td class="col-name">fetch_central_bank_rate.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="2736">2.7 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="fetch_cpi.py src/data"><td class="col-name">fetch_cpi.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="2389">2.3 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="fetch_gdp.py src/data"><td class="col-name">fetch_gdp.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="2151">2.1 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="process_current_account.py src/features"><td class="col-name">process_current_account.py</td><td class="col-folder">src/features</td><td class="col-size" data-val="2388">2.3 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="process_central_bank_rate.py src/features"><td class="col-name">process_central_bank_rate.py</td><td class="col-folder">src/features</td><td class="col-size" data-val="2269">2.2 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="process_cpi.py src/features"><td class="col-name">process_cpi.py</td><td class="col-folder">src/features</td><td class="col-size" data-val="3388">3.3 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="process_gdp.py src/features"><td class="col-name">process_gdp.py</td><td class="col-folder">src/features</td><td class="col-size" data-val="1784">1.7 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="build_macro_panel.py src/features"><td class="col-name">build_macro_panel.py</td><td class="col-folder">src/features</td><td class="col-size" data-val="6461">6.3 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="fetch_fred.py src/data"><td class="col-name">fetch_fred.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="9839">9.6 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="__init__.py src"><td class="col-name">__init__.py</td><td class="col-folder">src</td><td class="col-size" data-val="0">0 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="__init__.py src/data"><td class="col-name">__init__.py</td><td class="col-folder">src/data</td><td class="col-size" data-val="0">0 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="__init__.py src/evaluation"><td class="col-name">__init__.py</td><td class="col-folder">src/evaluation</td><td class="col-size" data-val="0">0 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="__init__.py src/features"><td class="col-name">__init__.py</td><td class="col-folder">src/features</td><td class="col-size" data-val="0">0 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="__init__.py src/models"><td class="col-name">__init__.py</td><td class="col-folder">src/models</td><td class="col-size" data-val="0">0 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="auto_push.py (root)"><td class="col-name">auto_push.py</td><td class="col-folder">(root)</td><td class="col-size" data-val="4202">4.1 KB</td><td class="col-mod"  data-val="2026-06-09">2026-06-09</td></tr>
+
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="section" open>
+    <summary class="section-head">
+      <span class="arrow">▶</span>
+      <span class="sec-icon">📄</span>
+      <span class="sec-label">Markdown</span>
+      <span class="sec-count">13 files</span>
+      <span class="sec-desc">Documentation, guides, session logs</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table style="min-width:480px">
+        <thead><tr><th class="col-name sortable" data-col="0" onclick="sortTable(this)" style="text-align:left">File <span class="sort-icon">↕</span></th><th class="col-folder sortable" data-col="1" onclick="sortTable(this)" style="text-align:left">Folder <span class="sort-icon">↕</span></th><th class="col-size sortable" data-col="2" onclick="sortTable(this)" style="text-align:right">Size <span class="sort-icon">↕</span></th><th class="col-mod sortable sorted-desc" data-col="3" onclick="sortTable(this)" style="text-align:left">Modified <span class="sort-icon">↓</span></th></tr></thead>
+        <tbody class="sec-body" data-cat="markdown">
+<tr data-search="session_log.md (root)"><td class="col-name">SESSION_LOG.md</td><td class="col-folder">(root)</td><td class="col-size" data-val="5765">5.6 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="project_guide.md (root)"><td class="col-name">PROJECT_GUIDE.md</td><td class="col-folder">(root)</td><td class="col-size" data-val="8164">8.0 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+<tr data-search="readme_byclaude_vi.md (root)"><td class="col-name">readme_byclaude_vi.md</td><td class="col-folder">(root)</td><td class="col-size" data-val="18627">18.2 KB</td><td class="col-mod"  data-val="2026-06-26">2026-06-26</td></tr>
+<tr data-search="readme_byclaude_en.md (root)"><td class="col-name">readme_byclaude_en.md</td><td class="col-folder">(root)</td><td class="col-size" data-val="17464">17.1 KB</td><td class="col-mod"  data-val="2026-06-26">2026-06-26</td></tr>
+<tr data-search="readme.md (root)"><td class="col-name">README.md</td><td class="col-folder">(root)</td><td class="col-size" data-val="19129">18.7 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="claude.md references"><td class="col-name">CLAUDE.md</td><td class="col-folder">References</td><td class="col-size" data-val="4325">4.2 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="readme.md src"><td class="col-name">README.md</td><td class="col-folder">src</td><td class="col-size" data-val="963">963 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="readme.md reports"><td class="col-name">README.md</td><td class="col-folder">reports</td><td class="col-size" data-val="836">836 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="gbpusd_ml_data_requirements_spec.md references"><td class="col-name">GBPUSD_ML_data_requirements_spec.md</td><td class="col-folder">References</td><td class="col-size" data-val="9283">9.1 KB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="readme.md models"><td class="col-name">README.md</td><td class="col-folder">models</td><td class="col-size" data-val="441">441 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="readme.md notebooks"><td class="col-name">README.md</td><td class="col-folder">notebooks</td><td class="col-size" data-val="431">431 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="readme.md data"><td class="col-name">README.md</td><td class="col-folder">data</td><td class="col-size" data-val="876">876 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="readme.md configs"><td class="col-name">README.md</td><td class="col-folder">configs</td><td class="col-size" data-val="405">405 B</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="section" open>
+    <summary class="section-head">
+      <span class="arrow">▶</span>
+      <span class="sec-icon">📋</span>
+      <span class="sec-label">Logs</span>
+      <span class="sec-count">1 file</span>
+      <span class="sec-desc">JSONL pipeline run logs</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table style="min-width:480px">
+        <thead><tr><th class="col-name sortable" data-col="0" onclick="sortTable(this)" style="text-align:left">File <span class="sort-icon">↕</span></th><th class="col-folder sortable" data-col="1" onclick="sortTable(this)" style="text-align:left">Folder <span class="sort-icon">↕</span></th><th class="col-size sortable" data-col="2" onclick="sortTable(this)" style="text-align:right">Size <span class="sort-icon">↕</span></th><th class="col-mod sortable sorted-desc" data-col="3" onclick="sortTable(this)" style="text-align:left">Modified <span class="sort-icon">↓</span></th></tr></thead>
+        <tbody class="sec-body" data-cat="logs">
+<tr data-search="pipeline_run_log.jsonl reports"><td class="col-name">pipeline_run_log.jsonl</td><td class="col-folder">reports</td><td class="col-size" data-val="9693">9.5 KB</td><td class="col-mod"  data-val="2026-06-27">2026-06-27</td></tr>
+
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="section" open>
+    <summary class="section-head">
+      <span class="arrow">▶</span>
+      <span class="sec-icon">📕</span>
+      <span class="sec-label">PDF</span>
+      <span class="sec-count">12 files</span>
+      <span class="sec-desc">Research papers — click to open in browser</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table style="min-width:480px">
+        <thead><tr><th class="col-name sortable" data-col="0" onclick="sortTable(this)" style="text-align:left">File <span class="sort-icon">↕</span></th><th class="col-folder sortable" data-col="1" onclick="sortTable(this)" style="text-align:left">Folder <span class="sort-icon">↕</span></th><th class="col-size sortable" data-col="2" onclick="sortTable(this)" style="text-align:right">Size <span class="sort-icon">↕</span></th><th class="col-mod sortable sorted-desc" data-col="3" onclick="sortTable(this)" style="text-align:left">Modified <span class="sort-icon">↓</span></th></tr></thead>
+        <tbody class="sec-body" data-cat="pdf">
+<tr data-search="predicting_forex_currency_fluctuations.pdf references"><td class="col-name"><a href="References/Predicting_Forex_Currency_Fluctuations.pdf" target="_blank">Predicting_Forex_Currency_Fluctuations.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="2782318">2.7 MB</td><td class="col-mod"  data-val="2026-06-19">2026-06-19</td></tr>
+<tr data-search="11_fx_lstm_direction_technical_indicators.pdf references"><td class="col-name"><a href="References/11_FX_LSTM_Direction_Technical_Indicators.pdf" target="_blank">11_FX_LSTM_Direction_Technical_Indicators.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="2344343">2.2 MB</td><td class="col-mod"  data-val="2026-06-11">2026-06-11</td></tr>
+<tr data-search="03_fx_forecasting_wavelets_neural_networks.pdf references"><td class="col-name"><a href="References/03_FX_Forecasting_Wavelets_Neural_Networks.pdf" target="_blank">03_FX_Forecasting_Wavelets_Neural_Networks.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="171428">167.4 KB</td><td class="col-mod"  data-val="2026-06-11">2026-06-11</td></tr>
+<tr data-search="04_fx_lstm_volatility_forecasting_deep_learning.pdf references"><td class="col-name"><a href="References/04_FX_LSTM_Volatility_Forecasting_Deep_Learning.pdf" target="_blank">04_FX_LSTM_Volatility_Forecasting_Deep_Learning.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="2233006">2.1 MB</td><td class="col-mod"  data-val="2026-06-11">2026-06-11</td></tr>
+<tr data-search="07_fx_deep_networks_direction_prediction.pdf references"><td class="col-name"><a href="References/07_FX_Deep_Networks_Direction_Prediction.pdf" target="_blank">07_FX_Deep_Networks_Direction_Prediction.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="1357296">1.3 MB</td><td class="col-mod"  data-val="2026-06-11">2026-06-11</td></tr>
+<tr data-search="01_aml_combating_money_laundering_using_ai.pdf references"><td class="col-name"><a href="References/01_AML_Combating_Money_Laundering_Using_AI.pdf" target="_blank">01_AML_Combating_Money_Laundering_Using_AI.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="578703">565.1 KB</td><td class="col-mod"  data-val="2026-06-11">2026-06-11</td></tr>
+<tr data-search="08_aml_gan_data_augmentation_imbalanced.pdf references"><td class="col-name"><a href="References/08_AML_GAN_Data_Augmentation_Imbalanced.pdf" target="_blank">08_AML_GAN_Data_Augmentation_Imbalanced.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="999757">976.3 KB</td><td class="col-mod"  data-val="2026-06-11">2026-06-11</td></tr>
+<tr data-search="02_fx_statistical_forecasting_exchange_rates_review.pdf references"><td class="col-name"><a href="References/02_FX_Statistical_Forecasting_Exchange_Rates_Review.pdf" target="_blank">02_FX_Statistical_Forecasting_Exchange_Rates_Review.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="8913852">8.5 MB</td><td class="col-mod"  data-val="2026-06-11">2026-06-11</td></tr>
+<tr data-search="09_fx_ml_forecasting_thesis.pdf references"><td class="col-name"><a href="References/09_FX_ML_Forecasting_Thesis.pdf" target="_blank">09_FX_ML_Forecasting_Thesis.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="1396811">1.3 MB</td><td class="col-mod"  data-val="2026-06-11">2026-06-11</td></tr>
+<tr data-search="05_ml_course_material_introduction.pdf references"><td class="col-name"><a href="References/05_ML_Course_Material_Introduction.pdf" target="_blank">05_ML_Course_Material_Introduction.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="395064">385.8 KB</td><td class="col-mod"  data-val="2026-06-10">2026-06-10</td></tr>
+<tr data-search="06_admin_affiliation_document.pdf references"><td class="col-name"><a href="References/06_Admin_Affiliation_Document.pdf" target="_blank">06_Admin_Affiliation_Document.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="492279">480.7 KB</td><td class="col-mod"  data-val="2026-06-10">2026-06-10</td></tr>
+<tr data-search="10_fx_eurusd_ml_direction_prediction.pdf references"><td class="col-name"><a href="References/10_FX_EURUSD_ML_Direction_Prediction.pdf" target="_blank">10_FX_EURUSD_ML_Direction_Prediction.pdf</a></td><td class="col-folder">References</td><td class="col-size" data-val="528196">515.8 KB</td><td class="col-mod"  data-val="2026-06-09">2026-06-09</td></tr>
+
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <footer>
+    Auto-generated by <code>python build_index.py</code> ·
+    Click any column header to sort ↑↓ ·
+    Run <code>update.bat</code> to refresh
+  </footer>
+
+</div>
+<script>
+/* ── theme ── */
+function toggleTheme(){
+  var h=document.documentElement;
+  var t=h.getAttribute("data-theme")==="dark"?"light":"dark";
+  h.setAttribute("data-theme",t);
+  localStorage.setItem("theme",t);
+}
+
+/* ── search ── */
+var $search=document.getElementById("search");
+$search.addEventListener("input",function(){
+  var q=this.value.trim().toLowerCase();
+  var anyVisible=false;
+  document.querySelectorAll("tbody[data-cat]").forEach(function(tbody){
+    var vis=0;
+    tbody.querySelectorAll("tr[data-search]").forEach(function(row){
+      var match=!q||row.dataset.search.includes(q);
+      row.classList.toggle("hidden",!match);
+      if(match)vis++;
+    });
+    anyVisible=anyVisible||(vis>0);
+    var det=tbody.closest("details");
+    if(det)det.open=(vis>0||!q);
+  });
+  document.getElementById("no-match").style.display=(!anyVisible&&q)?"block":"none";
+});
+
+/* ── sort ── */
+function sortTable(th){
+  var table=th.closest("table");
+  var tbody=table.querySelector("tbody");
+  var col=parseInt(th.dataset.col);
+
+  /* toggle direction; default to desc on first click of a new column */
+  var wasDesc=th.classList.contains("sorted-desc");
+  var asc=wasDesc;  /* if was desc → go asc; otherwise → go desc */
+
+  /* clear all sort markers in this table */
+  table.querySelectorAll("th.sortable").forEach(function(t){
+    t.classList.remove("sorted-asc","sorted-desc");
+    var icon=t.querySelector(".sort-icon");
+    if(icon)icon.textContent="↕";
+  });
+
+  th.classList.add(asc?"sorted-asc":"sorted-desc");
+  var icon=th.querySelector(".sort-icon");
+  if(icon)icon.textContent=asc?"↑":"↓";
+
+  /* sort all rows (hidden rows stay hidden via CSS) */
+  var rows=Array.from(tbody.querySelectorAll("tr"));
+  rows.sort(function(a,b){
+    var ca=a.cells[col],cb=b.cells[col];
+    if(!ca||!cb)return 0;
+    /* prefer data-val for numeric/date precision */
+    var va=ca.dataset.val!==undefined?ca.dataset.val:ca.textContent.trim();
+    var vb=cb.dataset.val!==undefined?cb.dataset.val:cb.textContent.trim();
+    var na=parseFloat(va),nb=parseFloat(vb);
+    if(!isNaN(na)&&!isNaN(nb))return asc?na-nb:nb-na;
+    if(va<vb)return asc?-1:1;
+    if(va>vb)return asc?1:-1;
+    return 0;
+  });
+  rows.forEach(function(r){tbody.appendChild(r);});
+}
+</script>
 </body>
 </html>
