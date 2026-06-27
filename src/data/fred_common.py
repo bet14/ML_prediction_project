@@ -38,6 +38,7 @@ def fetch_indicator_releases(
     realtime_start: str = "2000-01-01",
     realtime_end: str = None,
     chunk_years: int = 3,
+    log_fn=print,
 ) -> pd.DataFrame:
     """Full revision history for one series: every (observation date, release date,
     value) triple. Using all-releases (not just the latest) is what lets the matching
@@ -54,13 +55,19 @@ def fetch_indicator_releases(
        series' ALFRED coverage raises "series does not exist in ALFRED" even though the
        series itself is fine. Chunks with no ALFRED coverage are skipped (not fatal);
        only fail if literally no chunk returned anything.
+
+    log_fn: callable(str) used for chunk-level progress messages. Defaults to print so
+    existing callers (old combined fetch_*.py scripts) are unaffected; pass StepLogger.info
+    from per-block scripts to route messages through the structured logger.
     """
     realtime_start = pd.to_datetime(realtime_start)
     realtime_end = pd.to_datetime(realtime_end) if realtime_end else pd.Timestamp.today()
 
     frames = []
+    chunk_num = 0
     window_start = realtime_start
     while window_start <= realtime_end:
+        chunk_num += 1
         window_end = min(window_start + pd.DateOffset(years=chunk_years), realtime_end)
         try:
             chunk = fred.get_series_all_releases(
@@ -69,13 +76,21 @@ def fetch_indicator_releases(
                 realtime_end=window_end.strftime("%Y-%m-%d"),
             )
         except ValueError as exc:
-            print(
-                f"      [{series_id}] no ALFRED data for "
-                f"{window_start.date()}..{window_end.date()} -- skipping chunk ({exc})"
+            log_fn(
+                f"  chunk {chunk_num} ({window_start.date()} → {window_end.date()}): "
+                f"no ALFRED data — skipped ({exc})"
             )
             chunk = None
         if chunk is not None and len(chunk):
             frames.append(chunk)
+            log_fn(
+                f"  chunk {chunk_num} ({window_start.date()} → {window_end.date()}): "
+                f"{len(chunk)} rows"
+            )
+        elif chunk is not None:
+            log_fn(
+                f"  chunk {chunk_num} ({window_start.date()} → {window_end.date()}): 0 rows"
+            )
         window_start = window_end + pd.Timedelta(days=1)
 
     if not frames:
@@ -97,16 +112,16 @@ def save_raw_csv(df: pd.DataFrame, block: str, name: str, raw_dir: Path = DEFAUL
     return out_path
 
 
-def verify_series_id(fred: Fred, series_id: str) -> None:
+def verify_series_id(fred: Fred, series_id: str, log_fn=print) -> None:
     """Print title/units/frequency for one series id -- run with --verify-only before
     trusting any id tagged 'medium' confidence in a fetch_*.py script."""
     try:
         info = fred.get_series_info(series_id)
-        print(
-            f"      title     : {info.get('title')}\n"
-            f"      units     : {info.get('units')}\n"
-            f"      frequency : {info.get('frequency')}\n"
-            f"      obs range : {info.get('observation_start')} .. {info.get('observation_end')}"
+        log_fn(
+            f"  title     : {info.get('title')}\n"
+            f"  units     : {info.get('units')}\n"
+            f"  frequency : {info.get('frequency')}\n"
+            f"  obs range : {info.get('observation_start')} .. {info.get('observation_end')}"
         )
     except Exception as exc:  # noqa: BLE001 -- surfaced to the user, not swallowed
-        print(f"      ERROR: {exc}")
+        log_fn(f"  ERROR: {exc}")

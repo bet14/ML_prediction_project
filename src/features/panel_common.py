@@ -32,7 +32,13 @@ def load_raw_csv(block: str, name: str, raw_dir: Path = DEFAULT_RAW_DIR) -> pd.D
             f"{path} not found — run src/data/fetch_{name}.py on a machine with network "
             "access first, then copy the CSV into data/raw/macro/."
         )
-    return pd.read_csv(path, parse_dates=["date", "realtime_start"])
+    df = pd.read_csv(path, parse_dates=["date", "realtime_start"])
+    # Strip timezone info if present — ONS API returns UTC-aware timestamps which break
+    # merge_asof when compared with the timezone-naive business calendar index.
+    for col in ("date", "realtime_start"):
+        if col in df.columns and hasattr(df[col], "dt") and df[col].dt.tz is not None:
+            df[col] = df[col].dt.tz_localize(None)
+    return df
 
 
 def business_calendar(start, end=None) -> pd.DatetimeIndex:

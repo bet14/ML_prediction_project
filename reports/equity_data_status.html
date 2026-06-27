@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Equity Data Status — GBPUSD ML project</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1d212b; --border:#2a2f3a;
+    --text:#e6e8ec; --muted:#8b92a3; --accent:#5b8def;
+    --ok-bg:#13301f; --ok-text:#5fd98a; --ok-border:#1f5c39;
+    --warn-bg:#3a2a0f; --warn-text:#f0b84d; --warn-border:#6b4d14;
+    --bad-bg:#3a1414; --bad-text:#f06a6a; --bad-border:#6b1f1f;
+    --off-bg:#23262e; --off-text:#8b92a3; --off-border:#34384420;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:32px 40px 60px; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;
+  }
+  h1{font-size:22px; margin:0 0 4px;}
+  .subtitle{color:var(--muted); font-size:13px; margin-bottom:28px;}
+  h2{font-size:16px; margin:40px 0 12px; border-left:3px solid var(--accent); padding-left:10px;}
+  h2:first-of-type{margin-top:0;}
+  .note{color:var(--muted); font-size:13px; margin:-4px 0 16px; padding-left:13px;}
+  table{width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--border); border-radius:8px; overflow:hidden; font-size:13px;}
+  th,td{padding:10px 12px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top;}
+  th{background:var(--panel2); color:var(--muted); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#1a1e27;}
+  code{background:#10131a; padding:2px 6px; border-radius:4px; font-size:12px; color:#c7d3ff;}
+  .badge{display:inline-block; padding:3px 9px; border-radius:5px; font-size:11.5px; font-weight:600; white-space:nowrap;}
+  .badge-ok{background:var(--ok-bg); color:var(--ok-text); border:1px solid var(--ok-border);}
+  .badge-warn{background:var(--warn-bg); color:var(--warn-text); border:1px solid var(--warn-border);}
+  .badge-bad{background:var(--bad-bg); color:var(--bad-text); border:1px solid var(--bad-border);}
+  .badge-off{background:var(--off-bg); color:var(--off-text); border:1px solid #343844;}
+  .summary{display:flex; gap:14px; margin-bottom:8px; flex-wrap:wrap;}
+  .stat{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:14px 18px; min-width:140px;}
+  .stat .n{font-size:24px; font-weight:700;}
+  .stat .l{font-size:12px; color:var(--muted); margin-top:2px;}
+  .stat.ok .n{color:var(--ok-text);} .stat.warn .n{color:var(--warn-text);} .stat.bad .n{color:var(--bad-text);}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px;}
+  .err-list{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:4px 0;}
+  .err-item{display:flex; gap:12px; padding:12px 16px; border-bottom:1px solid var(--border);}
+  .err-item:last-child{border-bottom:none;}
+  .err-item .tag{flex:0 0 90px;}
+  .err-item .body b{color:var(--text);}
+  .err-item .body{color:var(--muted); font-size:13px;}
+  .logbox{background:#0b0d11; border:1px solid var(--border); border-radius:8px; padding:14px 16px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; color:#9fe3a3; white-space:pre-wrap; overflow-x:auto;}
+  .logmeta{color:var(--muted); font-size:12.5px; margin-bottom:10px;}
+  footer{margin-top:48px; color:var(--muted); font-size:12px; border-top:1px solid var(--border); padding-top:16px;}
+</style>
+</head>
+<body>
+
+<h1>Equity Data Status — GBPUSD direction-prediction project</h1>
+<div class="subtitle">Snapshot generated 2026-06-19 19:11 UTC · planning pass — no fetch has been run yet (no outbound network in the Cowork sandbox) · static file, does not auto-refresh — rerun fetch_equity_wip.py on a personal machine and ask to regenerate for fresh numbers.</div>
+<div class="subtitle">Companion to <code>reports/macro_data_status.html</code> and <code>reports/forex_data_status.html</code> — same structure, same day.</div>
+
+<div class="summary">
+  <div class="stat bad"><div class="n">9</div><div class="l">indices, all placeholder (0 rows)</div></div>
+  <div class="stat ok"><div class="n">8</div><div class="l">tickers high/moderate confidence</div></div>
+  <div class="stat warn"><div class="n">1</div><div class="l">ticker low confidence (FTSE All-Share)</div></div>
+</div>
+
+<h2>1. Raw data — data/raw/equity/</h2>
+<div class="note">Per the data spec (section 2.2), 9 indices, each a CSV with columns date, open, high, low, close, volume, daily, 2014→2024. Every file below was created this session as a header-only placeholder (replacing the bare <code>.gitkeep</code>) — no row has been fetched yet.</div>
+<table>
+<tr><th>File</th><th>Index</th><th>Block</th><th>yfinance ticker</th><th>Ticker confidence</th><th>Status</th></tr>
+<tr><td><code>USA_DJI.csv</code></td><td>Dow Jones Industrial Average</td><td>USA</td><td class="mono">^DJI</td><td><span class="badge badge-ok">high</span></td><td><span class="badge badge-bad">placeholder, 0 rows</span></td></tr>
+<tr><td><code>USA_NASDAQ_COMPOSITE.csv</code></td><td>Nasdaq Composite</td><td>USA</td><td class="mono">^IXIC</td><td><span class="badge badge-ok">high</span></td><td><span class="badge badge-bad">placeholder, 0 rows</span></td></tr>
+<tr><td><code>USA_NASDAQ100.csv</code></td><td>Nasdaq-100</td><td>USA</td><td class="mono">^NDX</td><td><span class="badge badge-ok">high</span></td><td><span class="badge badge-bad">placeholder, 0 rows</span></td></tr>
+<tr><td><code>USA_RUSSELL2000.csv</code></td><td>Russell 2000</td><td>USA</td><td class="mono">^RUT</td><td><span class="badge badge-ok">high</span></td><td><span class="badge badge-bad">placeholder, 0 rows</span></td></tr>
+<tr><td><code>USA_SP500.csv</code></td><td>S&amp;P 500</td><td>USA</td><td class="mono">^GSPC</td><td><span class="badge badge-ok">high</span></td><td><span class="badge badge-bad">placeholder, 0 rows</span></td></tr>
+<tr><td><code>UK_FTSE100.csv</code></td><td>FTSE 100</td><td>UK</td><td class="mono">^FTSE</td><td><span class="badge badge-ok">high</span></td><td><span class="badge badge-bad">placeholder, 0 rows</span></td></tr>
+<tr><td><code>UK_FTSE250.csv</code></td><td>FTSE 250</td><td>UK</td><td class="mono">^FTMC</td><td><span class="badge badge-warn">moderate</span></td><td><span class="badge badge-bad">placeholder, 0 rows</span></td></tr>
+<tr><td><code>UK_FTSE350.csv</code></td><td>FTSE 350</td><td>UK</td><td class="mono">^FTLC</td><td><span class="badge badge-warn">moderate</span></td><td><span class="badge badge-bad">placeholder, 0 rows</span></td></tr>
+<tr><td><code>UK_FTSE_ALL_SHARE.csv</code></td><td>FTSE All-Share</td><td>UK</td><td class="mono">^FTAS</td><td><span class="badge badge-bad">low — see Section 3</span></td><td><span class="badge badge-bad">placeholder, 0 rows</span></td></tr>
+</table>
+
+<h2>2. Related code files</h2>
+<table>
+<tr><th>File</th><th>Role</th><th>Status</th></tr>
+<tr><td><code>src/data/fetch_equity_wip.py</code></td><td>Fetches all 9 indices via <code>yfinance</code> (one <code>yf.Ticker(...).history()</code> call per index), reshapes to date/open/high/low/close/volume.</td><td><span class="badge badge-warn">WIP — code complete, no network run yet</span></td></tr>
+<tr><td><code>src/data/pipeline_log_common.py</code></td><td>Shared <code>append_run_log()</code>/<code>run_script()</code>/<code>make_run_record()</code> — extracted from <code>run_fred_pipeline.py</code> 2026-06-19, used here with <code>"pipeline": "equity"</code>.</td><td><span class="badge badge-ok">in use</span></td></tr>
+<tr><td><code>src/features/process_equity.py</code></td><td>Per-index panel build — not started.</td><td><span class="badge badge-bad">not written yet</span></td></tr>
+</table>
+
+<h2>3. Current findings / open issues</h2>
+<div class="err-list">
+  <div class="err-item"><div class="tag"><span class="badge badge-warn">FINDING</span></div><div class="body"><b>FTSE All-Share ticker (^FTAS) not live-confirmed</b> — inferred from the same Yahoo FTSE-family naming pattern as ^FTSE/^FTMC/^FTLC and from the Reuters RIC convention ".FTAS", but two direct verification attempts both returned empty bodies in this sandbox: the HTML quote page (<code>finance.yahoo.com/quote/%5EFTAS</code> — JS-rendered SPA, raw fetch sees no content) and the underlying chart JSON API (<code>query1.finance.yahoo.com/.../chart/%5EFTAS</code> — likely blocked by Yahoo's cookie/crumb requirement for unauthenticated callers). Spot-check <code>yf.Ticker("^FTAS").history(period="5d")</code> first when running on a personal machine.</div></div>
+  <div class="err-item"><div class="tag"><span class="badge badge-ok">NOT A BLOCKER</span></div><div class="body">The empty-fetch results above are a sandbox/anti-bot limitation, not evidence the ticker is wrong — <code>yfinance</code> (the package this project actually depends on) handles Yahoo's session/crumb negotiation internally, unlike the bare <code>requests</code> calls used to probe this manually.</div></div>
+  <div class="err-item"><div class="tag"><span class="badge badge-ok">NO CONCERN</span></div><div class="body">Unlike forex, equity index volume on Yahoo Finance is genuine traded share volume — no data-quality caveat analogous to the FX-volume issue in <code>reports/forex_data_status.html</code>.</div></div>
+</div>
+
+<h2>4. Run log</h2>
+<div class="logmeta">
+<code>fetch_equity_wip.py</code>'s <code>main()</code> calls <code>append_run_log()</code> at the end of every invocation, tagged <code>"pipeline": "equity"</code>, into the same shared <code>reports/pipeline_run_log.jsonl</code> used by macro and forex. No run has happened yet.
+</div>
+<div class="logbox">(no runs yet — reports/pipeline_run_log.jsonl has no "pipeline": "equity" entries)</div>
+
+<footer>
+Generated alongside <code>reports/forex_data_status.html</code> and <code>References/CLAUDE.md</code> (lessons-learned section) on 2026-06-19.
+</footer>
+
+</body>
+</html>

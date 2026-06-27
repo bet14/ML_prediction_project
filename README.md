@@ -54,28 +54,38 @@ ML_prediction_project/
 │   └── search_results/ # Bayesian search logs/results per fold
 ├── reports/
 │   ├── macro_data_status.html  # Live dashboard: raw/interim inventory, errors, alt-API research
-│   ├── pipeline_run_log.jsonl  # One JSON line per run_fred_pipeline.py invocation
+│   ├── forex_data_status.html  # Same, for data/raw/forex/ (Dukascopy vs yfinance decision)
+│   ├── equity_data_status.html # Same, for data/raw/equity/ (yfinance ticker confidence)
+│   ├── pipeline_run_log.jsonl  # One JSON line per fetch run (macro/forex/equity, tagged by "pipeline")
 │   ├── figures/        # Figures (feature importance, backtest charts, ...)
 │   └── tables/         # Tables (model_comparison.csv, ...)
 ├── configs/            # .env.example, config — no real secrets committed
 ├── Key/                # fred_key.txt (FRED API key, gitignored)
 ├── References/         # Papers (PDFs), data spec, CLAUDE.md
-└── working_plan.html, checklist.html, checklist_en.html, index.html, requirements.txt
+└── working_plan.html, checklist.html, checklist_en.html, index.html, requirements.txt,
+    run_equity_wip.bat, run_forex_wip.bat
 ```
 
-### `data/raw/forex/` — Forex OHLCV (Dukascopy)
+### `data/raw/forex/` — Forex OHLCV (Dukascopy or yfinance, see below)
 
-Currently a placeholder (`.gitkeep` only) — populate on a personal machine. Per the data spec
-(section 2.3), **13 pairs**, each as one CSV with open/close/low/high/volume columns, daily,
-2014→2024:
-
-```
-AUD/USD, EUR/USD, EUR/GBP, GBP/AUD, GBP/CAD, GBP/CHF, GBP/JPY,
-GBP/NZD, GBP/USD, NZD/USD, USD/CAD, USD/CHF, USD/JPY
-```
+**13 header-only placeholder CSVs** (`AUD_USD.csv`, `EUR_USD.csv`, `EUR_GBP.csv`,
+`GBP_AUD.csv`, `GBP_CAD.csv`, `GBP_CHF.csv`, `GBP_JPY.csv`, `GBP_NZD.csv`, `GBP_USD.csv`,
+`NZD_USD.csv`, `USD_CAD.csv`, `USD_CHF.csv`, `USD_JPY.csv` — columns `date, open, high, low,
+close, volume`) were created 2026-06-19, replacing the bare `.gitkeep`. No row has been
+fetched yet — populate on a personal machine with `src/data/fetch_forex_wip.py`.
 
 GBP/USD is both a feature source and the **target** (next-day close direction). Every pair
 that touches GBP or USD is included because they share macro drivers and are correlated.
+
+The spec (section 7) recommends Dukascopy, but it is tick-level data (one compressed file
+per pair *per hour* — a full 13-pair/11-year backfill is on the order of 800k-900k requests)
+and would need to be aggregated to daily client-side; yfinance's `=X` tickers are much
+lighter but FX volume on Yahoo is widely reported unreliable/zero. `fetch_forex_wip.py`
+implements **both** behind `--source dukascopy|yfinance` instead of silently choosing one —
+see the script's docstring and `reports/forex_data_status.html` for the full trade-off.
+Neither path has been run end-to-end yet (no outbound network in the Cowork sandbox); the
+Dukascopy URL pattern and tick-record byte layout are verified only by a live URL check plus
+convergent community sources, not by decoding a real downloaded file in this session.
 
 ### `data/raw/macro/` — Macro indicators (FRED / ONS)
 
@@ -132,13 +142,24 @@ hundred). For the live, auto-checked snapshot (file presence/size/row-count) ope
 
 ### `data/raw/equity/` — Equity indices (yfinance)
 
-Currently a placeholder (`.gitkeep` only). Per the data spec (section 2.2), **9 indices**,
-each OHLCV daily, 2014→2024:
+**9 header-only placeholder CSVs** created 2026-06-19, replacing the bare `.gitkeep`
+(columns `date, open, high, low, close, volume`). No row has been fetched yet — populate on
+a personal machine with `src/data/fetch_equity_wip.py`. Per the data spec (section 2.2):
 
 ```
-US:  DJI, NASDAQ Composite, NASDAQ100, RUSSELL2000, S&P500
-UK:  FTSE100, FTSE250, FTSE350, FTSE All-Share
+US:  USA_DJI.csv (^DJI), USA_NASDAQ_COMPOSITE.csv (^IXIC), USA_NASDAQ100.csv (^NDX),
+     USA_RUSSELL2000.csv (^RUT), USA_SP500.csv (^GSPC)
+UK:  UK_FTSE100.csv (^FTSE), UK_FTSE250.csv (^FTMC), UK_FTSE350.csv (^FTLC),
+     UK_FTSE_ALL_SHARE.csv (^FTAS)
 ```
+
+All tickers were checked via web search 2026-06-19, not via a live `yfinance` call in this
+sandbox. `^FTAS` (FTSE All-Share) has the lowest confidence — two direct verification
+attempts against Yahoo Finance both returned empty bodies (consistent with the quote page
+being a JS-rendered SPA, and the raw chart JSON API likely requiring a cookie/crumb handshake
+that `yfinance` itself handles but a bare `requests` call does not) — spot-check this one
+first when running `fetch_equity_wip.py` on a personal machine. See
+`reports/equity_data_status.html` for the full per-ticker confidence table.
 
 ### `data/interim/` — Merged macro panels
 
@@ -177,9 +198,12 @@ Placeholder (`.gitkeep`). Three variants to be built (spec section 3):
 | `fetch_current_account_uk_wip.py` | **WIP, schema verified 2026-06-19** — UK current account from the ONS v1 beta API (series `HBOP`, dataset `pnbp`); writes `UK_current_account.csv` directly (no production file exists yet to conflict with) |
 | `fetch_cpi_uk_alt_wip.py` | **WIP, schema verified 2026-06-19** — alternative UK CPI from the ONS v1 beta API (series `D7BT`, dataset `mm23`); writes to `UK_cpi_ons_alt.csv`, a separate file from the production `UK_cpi.csv` — see docstring before swapping it in |
 | `fetch_composite_pmi_wip.py` | **WIP, real scraper verified 2026-06-19** — `fetch_recent_releases()` scrapes investing.com's economic-calendar pages for USA/UK Composite PMI; confirmed those pages only retain ~3-4 recent releases (not full history), so this is an incremental updater, not a backfill tool — see docstring for the manual-fallback workflow still needed for 2014-2024 history |
+| `fetch_forex_wip.py` | **WIP, not yet run** — 13 forex pairs, dual-source (`--source dukascopy\|yfinance`); see `data/raw/forex/` above and `reports/forex_data_status.html` for the source trade-off |
+| `fetch_equity_wip.py` | **WIP, not yet run** — 9 equity indices via yfinance; see `data/raw/equity/` above and `reports/equity_data_status.html` for per-ticker confidence |
+| `pipeline_log_common.py` | Shared `append_run_log()`/`run_script()`/`make_run_record()` — extracted 2026-06-19 from `run_fred_pipeline.py` so forex/equity scripts append to the same `reports/pipeline_run_log.jsonl`, tagged by a `"pipeline"` field (`"macro"`/`"forex"`/`"equity"`) |
 | `__init__.py` | Package marker |
 
-The two `*_wip.py` scripts are deliberately separate from the four working `fetch_*.py`
+The `*_wip.py` scripts are deliberately separate from the four working `fetch_*.py`
 above: they are not wired into `run_fred_pipeline.py` and must be run by hand once their
 source is confirmed working.
 
@@ -208,13 +232,17 @@ to be built.
 | `index.html` | Auto-generated deliverables gallery |
 | `eurusd_data_pipeline_erd.html` | ERD of the data pipeline |
 | `requirements.txt` | Python deps for `src/` |
+| `run_equity_wip.bat` | `cd /d %~dp0` + `python src\data\fetch_equity_wip.py %*` + `pause` — same minimal pattern as `run_fred_pipeline.bat`; extra args pass through, e.g. `run_equity_wip.bat --index FTAS --append` |
+| `run_forex_wip.bat` | Same pattern for `fetch_forex_wip.py`; e.g. `run_forex_wip.bat --pair GBPUSD --source yfinance --append` |
 
 ### `reports/`
 
 | File | Role |
 |---|---|
 | `macro_data_status.html` | Live dashboard (open in browser) — raw/interim file inventory, current errors/warnings, and the alternative-API research notes (ONS candidates, Composite PMI investigation) |
-| `pipeline_run_log.jsonl` | One JSON line appended per `run_fred_pipeline.py` invocation (timestamp, mode, per-script returncode/duration, overall success); created on first run, accumulates from then on |
+| `forex_data_status.html` | Same idea for `data/raw/forex/` — 13-pair placeholder inventory + the Dukascopy-vs-yfinance source decision, not yet resolved |
+| `equity_data_status.html` | Same idea for `data/raw/equity/` — 9-index placeholder inventory + per-ticker confidence (FTSE All-Share flagged lowest) |
+| `pipeline_run_log.jsonl` | One JSON line appended per fetch invocation across macro/forex/equity (timestamp, `"pipeline"` tag, mode, per-script returncode/duration, overall success); created on first run, accumulates from then on |
 | `figures/`, `tables/` | Generated charts and result tables (empty until model training runs) |
 
 ### `References/`

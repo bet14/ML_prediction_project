@@ -1,75 +1,77 @@
 """
-Run the full FRED pipeline: fetch_*.py for every indicator type, then process_*.py for
-every indicator type — equivalent to running each pair's two scripts by hand, in order.
+Run the full macro data pipeline: fetch raw CSVs from FRED/ONS for each block and
+indicator, then build interim panels for each indicator.
 
-Indicator types: gdp, cpi, central_bank_rate, current_account (composite_pmi excluded —
-not on FRED, see src/data/fred_common.py docstring).
+Fetch scripts (src/data/fetch_[block]_[indicator].py) — one script per block per
+indicator, each with its own console logging and a JSON record in pipeline_run_log.jsonl.
+Process scripts (src/features/process_[indicator].py) — one script per indicator,
+reads whichever raw CSVs exist and produces an interim panel.
 
-Each fetch_*.py needs outbound network to api.stlouisfed.org. Run this on a personal
-machine with internet access, not inside the Cowork sandbox.
+Fetch order (run sequentially — each block can fail independently):
+  1. fetch_usa_gdp.py          (FRED: GDP)
+  2. fetch_uk_gdp.py           (FRED: CLVMNACSCAB1GQUK — discontinued at 2020-07)
+  3. fetch_usa_cpi.py          (FRED: CPIAUCSL)
+  4. fetch_uk_cpi.py           (FRED: GBRCPIALLMINMEI — ~15 months stale)
+  5. fetch_usa_central_bank_rate.py   (FRED: DFF, daily)
+  6. fetch_uk_central_bank_rate.py    (FRED: IRSTCI01GBM156N, monthly)
+  7. fetch_usa_current_account.py     (FRED: IEABC)
+  8. fetch_uk_current_account.py      (ONS v1 beta API: HBOP/pnbp — no API key)
 
-Run logging
------------
-Every invocation appends one JSON line to reports/pipeline_run_log.jsonl: timestamp,
-mode, --start/--end, per-script returncode + duration, overall success. This is the
-only persisted run history in the repo (the console output itself is never saved) —
-a dashboard can tail the last N lines of that file to show real "last N runs" instead
-of inferring a single run from file mtimes. Logging failures never abort the pipeline.
+Process order:
+  1. process_gdp.py            → data/interim/gdp_panel.csv
+  2. process_cpi.py            → data/interim/cpi_panel.csv
+  3. process_central_bank_rate.py     → data/interim/central_bank_rate_panel.csv
+  4. process_current_account.py       → data/interim/current_account_panel.csv
 
-Usage
+Flags
 -----
-    python run_fred_pipeline.py
-    python run_fred_pipeline.py --start 2014-01-01 --end 2024-12-31
-    python run_fred_pipeline.py --verify-only      # sanity-check series ids, fetch/process nothing
-    python run_fred_pipeline.py --skip-fetch       # only re-run processing on existing raw CSVs
+    --skip-fetch       only re-run process_*.py on existing raw CSVs (no network needed)
+    --verify-only      run each fetch script in verify/raw-dump mode then exit
+    --block USA|UK     restrict fetch to one block only (process always runs for both)
+
+Network: fetch_*.py scripts need outbound network (FRED or ONS). Run on a personal
+machine. process_*.py scripts are pure pandas — they run in Cowork once CSVs exist.
+
+Each invocation appends one JSON line to reports/pipeline_run_log.jsonl with a
+"pipeline": "macro" tag; individual scripts each append their own per-script record.
 """
 
 import argparse
-import json
-import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src" / "data"))
+from pipeline_log_common import append_run_log, run_script  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_DIR = PROJECT_ROOT / "src" / "data"
 FEATURES_DIR = PROJECT_ROOT / "src" / "features"
-RUN_LOG_PATH = PROJECT_ROOT / "reports" / "pipeline_run_log.jsonl"
 
-INDICATORS = ["gdp", "cpi", "central_bank_rate", "current_account"]
+FETCH_SCRIPTS = [
+    ("fetch_usa_gdp.py",             "USA"),
+    ("fetch_uk_gdp.py",              "UK"),
+    ("fetch_usa_cpi.py",             "USA"),
+    ("fetch_uk_cpi.py",              "UK"),
+    ("fetch_usa_central_bank_rate.py", "USA"),
+    ("fetch_uk_central_bank_rate.py",  "UK"),
+    ("fetch_usa_current_account.py", "USA"),
+    ("fetch_uk_current_account.py",  "UK"),
+]
 
-
-def run_script(script_dir: Path, script_name: str, args: list) -> dict:
-    """Run one fetch_*.py/process_*.py and return a step record for the run log.
-    Child stdout/stderr stream straight to the console as before (no capture) — the
-    per-chunk ALFRED warnings and per-block "saved N rows" lines stay visible live."""
-    cmd = [sys.executable, script_name, *args]
-    print(f"\n>>> {script_name} {' '.join(args)}")
-    t0 = time.monotonic()
-    result = subprocess.run(cmd, cwd=script_dir)
-    duration_s = round(time.monotonic() - t0, 2)
-    ok = result.returncode == 0
-    if not ok:
-        print(f"    FAILED (exit code {result.returncode})")
-    return {
-        "script": script_name,
-        "args": args,
-        "returncode": result.returncode,
-        "ok": ok,
-        "duration_s": duration_s,
-    }
+PROCESS_SCRIPTS = [
+    "process_gdp.py",
+    "process_cpi.py",
+    "process_central_bank_rate.py",
+    "process_current_account.py",
+]
 
 
-def append_run_log(record: dict, log_path: Path = RUN_LOG_PATH) -> None:
-    """Append one JSON line per pipeline invocation. Best-effort: a missing/read-only
-    reports/ folder must not fail the actual data pipeline."""
-    try:
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        with log_path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
-    except OSError as exc:  # noqa: BLE001 — logging must never break the pipeline
-        print(f"    [run-log] could not write {log_path}: {exc}")
+def _divider(title: str) -> None:
+    width = 60
+    print(f"\n{'=' * width}")
+    print(f"  {title}")
+    print(f"{'=' * width}")
 
 
 def main() -> None:
@@ -82,7 +84,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--verify-only", action="store_true",
-        help="only run fetch_*.py --verify-only against every series id, then exit",
+        help="run fetch_*.py --verify-only / --raw-dump for every script, then exit",
+    )
+    parser.add_argument(
+        "--block", choices=["USA", "UK"], default=None,
+        help="restrict fetching to one block; process scripts always run for both",
     )
     args = parser.parse_args()
 
@@ -94,7 +100,9 @@ def main() -> None:
     def finish() -> None:
         append_run_log({
             "timestamp": run_started.isoformat(timespec="seconds"),
+            "pipeline": "macro",
             "mode": mode,
+            "block_filter": args.block,
             "start_arg": args.start,
             "end_arg": args.end,
             "steps": steps,
@@ -102,19 +110,28 @@ def main() -> None:
         })
 
     if not args.skip_fetch:
-        print("=== 1/2 FETCH (needs network) ===")
-        for name in INDICATORS:
+        _divider("1/2  FETCH  (needs network — FRED / ONS)")
+        for script_name, block in FETCH_SCRIPTS:
+            if args.block and block != args.block:
+                print(f"\n  [skipped by --block {args.block}] {script_name}")
+                continue
             script_args = ["--verify-only"] if args.verify_only else date_args
-            steps.append(run_script(DATA_DIR, f"fetch_{name}.py", script_args))
+            steps.append(run_script(DATA_DIR, script_name, script_args))
+
         if args.verify_only:
             finish()
             return
 
-    print("\n=== 2/2 PROCESS (pure pandas, no network) ===")
-    for name in INDICATORS:
-        steps.append(run_script(FEATURES_DIR, f"process_{name}.py", date_args))
+    _divider("2/2  PROCESS  (pure pandas — runs in Cowork)")
+    for script_name in PROCESS_SCRIPTS:
+        steps.append(run_script(FEATURES_DIR, script_name, date_args))
 
-    print("\nDone. Raw CSVs -> data/raw/macro/ ; panels -> data/interim/*_panel.csv")
+    n_ok = sum(1 for s in steps if s["ok"])
+    n_total = len(steps)
+    _divider(f"DONE  {n_ok}/{n_total} steps succeeded")
+    print(f"  Raw CSVs  → data/raw/macro/")
+    print(f"  Panels    → data/interim/*_panel.csv")
+    print(f"  Run log   → reports/pipeline_run_log.jsonl")
     finish()
 
 
