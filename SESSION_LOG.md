@@ -5,6 +5,58 @@
 
 ---
 
+## 2026-06-29 — Review trạng thái, cập nhật SESSION_LOG, tạo CLAUDE.md
+
+**Branch:** branch_lee
+
+**project_status.py kết quả (chạy lúc 10:11):** Overall 74% — 32/43 items OK
+
+**Những thay đổi đã xảy ra từ log trước (2026-06-27) nhưng chưa được ghi:**
+
+### Phase 1B — Forex (hoàn tất)
+Tất cả 13 cặp FX đã fetch thật bằng yfinance (`run_forex_wip.bat --source yfinance`):
+| Pair | Rows | Coverage |
+|---|---|---|
+| GBP/USD (target) | 2,866 | 2014-01-01 → 2024-12-30 |
+| EUR/USD, AUD/USD, NZD/USD, USD/CAD, USD/CHF, USD/JPY | 2,866 | 2014-01-01 → 2024-12-30 |
+| EUR/GBP, GBP/AUD, GBP/CAD, GBP/CHF, GBP/NZD | 2,867 | 2014-01-01 → 2024-12-30 |
+| GBP/JPY | 2,867 | 2014-01-01 → 2024-12-30 |
+
+> Lưu ý: volume = 0 cho tất cả cặp FX trên yfinance — đây là giới hạn đã biết của nguồn này (ghi trong spec). OHLC tin được, volume không dùng được.
+
+### Phase 1C — Equity (hoàn tất)
+Tất cả 9 equity index đã fetch thật bằng yfinance (`run_equity_wip.bat`):
+| Index | Rows | Coverage |
+|---|---|---|
+| S&P 500, Nasdaq Composite, Nasdaq 100, DJI, Russell 2000 | 2,767 | 2014-01-02 → 2024-12-30 |
+| FTSE 100, FTSE 250, FTSE All-Share | 2,777–2,778 | 2014-01-02 → 2024-12-30 |
+| FTSE 350 | 2,697 | 2014-01-02 → 2024-12-30 |
+
+### Phase 1A — Macro (không đổi)
+- USA: 4 indicators OK
+- UK central bank rate: OK
+- UK GDP: **WARN** — FRED discontinued Jul-2020, cần nguồn thay thế
+- UK CPI: **WARN** — stale ~15 tháng; `UK_cpi_ons_alt.csv` (161 rows, ONS) đã có nhưng chưa swap vào pipeline
+- UK Current Account: `UK_current_account.csv` (52 rows, ONS) đã có nhưng chưa tích hợp vào interim panel
+- Composite PMI (USA + UK): **BLOCKED** — không có nguồn historical
+
+### Phase 2 — Interim (một phần)
+4 macro panels OK (`gdp`, `cpi`, `central_bank_rate`, `current_account` — mỗi panel 2,870 rows).
+Forex panel và Equity panel **chưa có** — đây là bước tiếp theo ưu tiên cao nhất.
+
+**Dừng ở:** review trạng thái + cập nhật SESSION_LOG + tạo CLAUDE.md root
+
+**Bước tiếp theo (ưu tiên cao → thấp):**
+1. Tạo `src/data/process_forex.py` → build `data/interim/forex_panel.csv` từ 13 forex CSVs
+2. Tạo `src/data/process_equity.py` → build `data/interim/equity_panel.csv` từ 9 equity CSVs
+3. Quyết định UK CPI: swap `UK_cpi_ons_alt.csv` vào `process_cpi.py` → rebuild `cpi_panel.csv`
+4. Tích hợp `UK_current_account.csv` vào `process_current_account.py` → rebuild `current_account_panel.csv`
+5. Tìm nguồn UK GDP thay thế (ONS trực tiếp)
+6. Sau khi interim đủ → build `data/processed/` (3 dataset variants)
+7. Xây dựng `src/models/` và `src/evaluation/`
+
+---
+
 ## 2026-06-27 — Tách macro fetch scripts thành per-block, thêm StepLogger
 
 **Session này làm gì:**
@@ -32,68 +84,6 @@
 
 **Script cũ (fetch_gdp.py, fetch_cpi.py, fetch_central_bank_rate.py, fetch_current_account.py):**
 Vẫn còn trong repo, không bị xóa, nhưng không còn được gọi bởi pipeline.
-
----
-
-## 2026-06-27 — Tạo PROJECT_GUIDE + SESSION_LOG
-
-**Session này làm gì:**
-- Đọc hiểu toàn bộ cấu trúc project, trạng thái dữ liệu, script hiện có
-- Tạo `PROJECT_GUIDE.md` (hướng dẫn folder + conventions)
-- Tạo `SESSION_LOG.md` (file này)
-- Lưu memory vào Claude Code memory system
-
-**Branch đang làm việc:** `branch_lee`
-
-**Tổng quan trạng thái hiện tại:**
-
-### Dữ liệu đã có (committed hoặc untracked):
-- [x] USA macro 4 indicators: GDP, CPI, central bank rate, current account — OK, trong `data/raw/macro/`
-- [x] UK central bank rate — OK
-- [x] `data/interim/` — 4 panel CSV: gdp, cpi, central_bank_rate, current_account (USA only trong current_account)
-- [x] `UK_cpi_ons_alt.csv` — 161 rows từ ONS v1 beta API (untracked, chưa committed)
-- [x] `UK_current_account.csv` — 52 rows từ ONS v1 beta API (untracked, chưa committed)
-
-### Dữ liệu header-only (chưa có data thật):
-- [ ] `data/raw/equity/*.csv` — 9 file, mỗi file 1 dòng header (dry-run 2026-06-26 ok nhưng không ghi file)
-- [ ] `data/raw/forex/*.csv` — 13 file, mỗi file 1 dòng header (chưa fetch lần nào)
-
-### Vấn đề còn mở:
-- [ ] **UK GDP**: FRED series `CLVMNACSCAB1GQUK` discontinued từ 2020-07. Cần nguồn thay thế (ONS trực tiếp). Chưa có giải pháp.
-- [ ] **UK CPI**: `UK_cpi.csv` hiện tại stale ~15 tháng. `UK_cpi_ons_alt.csv` đã fetch nhưng format/series khác `UK_cpi.csv` — xem docstring `fetch_cpi_uk_alt_wip.py` trước khi swap.
-- [ ] **Composite PMI (USA + UK)**: Không có trên FRED. investing.com chỉ giữ ~3-4 release gần nhất. Cần tìm nguồn historical data thủ công cho 2014-2024. `fetch_composite_pmi_wip.py` chỉ dùng được làm incremental updater.
-
-### Script _wip đã có nhưng chưa chạy thật:
-| Script | STATUS |
-|---|---|
-| `src/data/fetch_cpi_uk_alt_wip.py` | Schema ONS verified 2026-06-19, đã chạy → `UK_cpi_ons_alt.csv` (161 rows) |
-| `src/data/fetch_current_account_uk_wip.py` | Schema ONS verified 2026-06-19, đã chạy → `UK_current_account.csv` (52 rows) |
-| `src/data/fetch_composite_pmi_wip.py` | Scraper verified 2026-06-19, CHỈ lấy được ~3-4 release gần nhất |
-| `src/data/fetch_forex_wip.py` | Chưa chạy lần nào — cần mạng, cần chọn `--source dukascopy\|yfinance` |
-| `src/data/fetch_equity_wip.py` | Dry-run OK 2026-06-26 (yfinance, 2767-2778 rows/index) — cần chạy thật để ghi file |
-
-**Bước tiếp theo (ưu tiên cao → thấp):**
-1. Chạy `run_equity_wip.bat` (không có `--dry-run`) trên máy cá nhân → ghi 9 equity CSVs
-2. Quyết định forex source (yfinance vs Dukascopy) → chạy `run_forex_wip.bat` → ghi 13 forex CSVs
-3. Xử lý UK CPI: quyết định có dùng `UK_cpi_ons_alt.csv` thay `UK_cpi.csv` không → cập nhật `process_cpi.py`
-4. Cập nhật `process_current_account.py` để tích hợp `UK_current_account.csv` mới vào panel
-5. Tìm nguồn Composite PMI lịch sử 2014-2024 (thủ công nếu cần)
-6. Sau khi có đủ raw data → build `data/processed/` (3 dataset variants)
-7. Xây dựng `src/models/` và `src/evaluation/`
-
-**Untracked files cần commit (khi có mạng/trên máy cá nhân):**
-- `data/raw/macro/UK_cpi_ons_alt.csv`
-- `data/raw/macro/UK_current_account.csv`
-- `src/data/fetch_equity_wip.py`
-- `src/data/fetch_forex_wip.py`
-- `src/data/pipeline_log_common.py`
-- `run_equity_wip.bat`, `run_forex_wip.bat`
-- `reports/pipeline_run_log.jsonl`
-- `reports/equity_data_status.html`, `reports/forex_data_status.html`
-- `PROJECT_GUIDE.md`, `SESSION_LOG.md` (file này)
-- `README.md` (modified — cần kiểm tra nội dung thay đổi gì)
-- `References/CLAUDE.md` (modified)
-- `run_fred_pipeline.py` (modified — pipeline_log_common.py được tách ra)
 
 ---
 
