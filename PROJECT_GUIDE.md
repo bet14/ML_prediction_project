@@ -7,8 +7,19 @@
 
 ## Mục tiêu
 
+### Mục tiêu dự án(4 goals bắt buộc)
+
+| # | Goal | Trạng thái | Ghi chú |
+|---|---|---|---|
+| 1 | **Thu thập dữ liệu** từ nhiều nguồn (API, scraping, open data) | ~80% ✅ | FRED API, ONS API, yfinance — còn thiếu UK GDP alt + PMI historical |
+| 2 | **Phân tích dữ liệu**, định nghĩa target cần dự đoán | ~15% ⚠️ | Target đã định nghĩa — EDA chưa làm (`notebooks/` trống) |
+| 3 | **Build model**, training/prediction pipeline, chọn metrics | ~5% ⚠️ | Scaffold only — chưa có processed dataset, chưa train |
+| 4 | **Tạo interface** (Streamlit) và tích hợp model vào UX | 0% ❌ | `src/app/` scaffold only, chưa bắt đầu |
+
+### Mục tiêu ML cụ thể
+
 Dự đoán chiều hướng GBP/USD ngày tiếp theo (tăng / không tăng) bằng Machine Learning.
-Adaped từ paper Guyard & Deriaz (2024) về EUR/USD. Thay European Area → UK.
+Adapted từ paper Guyard & Deriaz (2024) về EUR/USD. Thay European Area → UK.
 
 ```
 Direction(t) = 1  nếu close(t+1) > close(t)
@@ -16,6 +27,34 @@ Direction(t) = 0  nếu close(t+1) <= close(t)
 ```
 
 **Dữ liệu:** 2014-01-01 → 2024-12-31 (≈ 11 năm, daily).
+
+### Những gì còn thiếu (theo thứ tự ưu tiên)
+
+**Goal 1 — Data (hoàn thiện nốt):**
+- [ ] UK GDP: tìm nguồn thay thế cho FRED series đã discontinued (ONS trực tiếp)
+- [ ] Composite PMI USA + UK: tìm nguồn historical 2014–2024 (đang BLOCKED)
+- [ ] Build `data/interim/forex_panel.csv` — cần tạo `src/features/process_forex.py`
+- [ ] Build `data/interim/equity_panel.csv` — cần tạo `src/features/process_equity.py`
+- [ ] Swap UK CPI sang ONS alt source, rebuild `cpi_panel.csv`
+- [ ] Tích hợp UK current account vào `current_account_panel.csv`
+
+**Goal 2 — EDA & Analysis (`notebooks/`):**
+- [ ] `01_eda_macro.ipynb` — phân tích macro indicators, missing values, stationarity
+- [ ] `02_eda_forex_equity.ipynb` — phân tích OHLCV, correlation, target distribution
+- [ ] `03_feature_analysis.ipynb` — feature importance, multicollinearity
+- [ ] Visualize target balance (class imbalance check)
+
+**Goal 3 — Model pipeline (`src/models/`, `src/evaluation/`):**
+- [ ] Build `data/processed/` — 3 dataset variants (Basic / 90-Day / Technical)
+- [ ] `src/models/train.py` — training pipeline (LR, RF, XGB, LGBM, MLP)
+- [ ] `src/models/bayesian_search.py` — hyperparameter optimization
+- [ ] `src/evaluation/walk_forward_cv.py` — walk-forward cross-validation
+- [ ] `src/evaluation/backtest.py` + `metrics.py` — accuracy, F1, AUC, Sharpe proxy
+- [ ] `reports/tables/model_comparison.csv`
+
+**Goal 4 — Streamlit interface (`src/app/`):**
+- [ ] `src/app/app.py` — load trained model, input form, predict direction
+- [ ] Visualize: feature importance, recent predictions vs actual, confidence
 
 ---
 
