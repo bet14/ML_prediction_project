@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-06-29 23:00 — Key Takeaways, EDA HTML report, menu option 8
+
+**Branch:** branch_lee
+
+**Done:**
+
+### notebooks — Key Takeaways filled in all 3 notebooks
+- **01_eda_macro.ipynb — Section 7:** Missing values (forward-fill strategy), Stationarity (GDP/CPI levels are I₁ → use YoY/diff), Correlations (Fed↔BoE r=0.94, USA CPI↔UK CPI r=0.98), Release lags (GDP/CA quarterly max 90d; CPI monthly max 45d), Implications (days_since_update as explicit feature; rate differential as synthetic feature).
+- **02_eda_forex_equity.ipynb — Section 11:** Target balance (49.1/50.9% — no SMOTE needed), Returns profile (skew=-0.91, kurtosis=14.44 → RobustScaler), EUR/GBP kurtosis=109 + GBP/CHF kurtosis=173 (clip ±5σ), UK FTSE positively correlated with GBP/USD, Rolling volatility as engineered feature candidate.
+- **03_feature_analysis.ipynb — Section 10:** 19 high-corr pairs documented with drop decisions (keep FTSE100/SP500/NASDAQ100, drop DJI/FTSE350/FTSE_ALL_SHARE/NASDAQ_COMPOSITE), RF importance notes, 4 feature clusters labeled, Dataset 1/2/3 implications written.
+
+### scripts/generate_eda_report.py — new script
+- Reads 3 executed EDA notebooks (JSON), extracts all cell outputs (text + matplotlib images as base64)
+- Renders markdown cells (including Key Takeaways with bold/code/list formatting)
+- Generates `reports/eda_summary.html` — standalone, 3-tab HTML (Macro · Forex & Equity · Feature Analysis)
+- Flags: `--run-notebooks` (execute via nbconvert first), `--open` (open browser after)
+- Output size: ~1592 KB (charts embedded as base64)
+
+### menu.bat — option 8 added
+- New option `8 — Generate EDA summary report (HTML)` between options 7 and A
+- Runs `python scripts/generate_eda_report.py --open` with optional extra args
+
+### map.md — updated
+- Added 2 entries under EDA Notebooks section: `scripts/generate_eda_report.py` and `reports/eda_summary.html`
+
+**Stopped at:** Session closed — /savelog confirmed, all work captured
+
+**Next steps:**
+1. Begin **Goal 3** — write `src/features/build_dataset.py` to build Dataset 1 Basic Daily (~130 cols)
+   - Forward-fill macro NaN, drop redundant equity cols (FTSE350/ALL_SHARE/FTSE250/DJI/NASDAQ_COMPOSITE), use CPI YoY not level, add rate_differential = Fed − BoE, drop 2014-01-01
+2. Run notebook 03 to verify RF importance and VIF numbers before finalising feature list
+3. Decide on RobustScaler vs StandardScaler strategy for different feature groups
+
+---
+
 ## 2026-06-29 21:00 — Fix notebook 01 errors, create notebook 03
 
 **Branch:** branch_lee

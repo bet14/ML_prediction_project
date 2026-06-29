@@ -23,6 +23,7 @@ echo  ^|                                              ^|
 echo  ^|   EDA / NOTEBOOKS                            ^|
 echo  ^|   6   Open JupyterLab  (notebooks/)          ^|
 echo  ^|   7   Run notebook  (nbconvert, no browser)  ^|
+echo  ^|   8   Generate EDA summary report (HTML)     ^|
 echo  ^|                                              ^|
 echo  ^|   A   Run all  (see notes below)             ^|
 echo  ^|   0   Exit                                   ^|
@@ -44,6 +45,7 @@ if /i "!choice!"=="4" goto TASK_FOREX
 if /i "!choice!"=="5" goto TASK_PUSH
 if /i "!choice!"=="6" goto TASK_JUPYTER
 if /i "!choice!"=="7" goto TASK_RUN_NB
+if /i "!choice!"=="8" goto TASK_EDA_REPORT
 if /i "!choice!"=="A" goto TASK_ALL
 if    "!choice!"=="0" goto EXIT
 
@@ -214,6 +216,36 @@ if !errorlevel! equ 0 (
     echo  Done. Open notebooks\!nb_file! in JupyterLab to view results.
 ) else (
     echo  ERROR: notebook execution failed. Check cell output for details.
+)
+echo.
+pause
+goto MENU
+
+
+:: ============================================================
+::  TASK 8 -- Generate EDA summary report
+:: ============================================================
+:TASK_EDA_REPORT
+echo  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+echo   [8] Generate EDA summary report (HTML)
+echo  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+echo.
+echo  Reads the 3 executed EDA notebooks and generates:
+echo    reports/eda_summary.html
+echo.
+echo  Options:
+echo    (Enter)              generate from current notebook outputs
+echo    --run-notebooks      execute all 3 notebooks first, then report
+echo.
+set "args="
+set /p args=  Extra args (Enter = use existing outputs):
+echo.
+python scripts\generate_eda_report.py !args! --open
+echo.
+if !errorlevel! equ 0 (
+    echo  Report saved to reports\eda_summary.html and opened in browser.
+) else (
+    echo  ERROR: report generation failed. Check output above.
 )
 echo.
 pause

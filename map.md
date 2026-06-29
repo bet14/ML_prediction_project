@@ -56,6 +56,8 @@
 | EDA macro indicators (GDP, CPI, rates, CA) | `notebooks/01_eda_macro.ipynb` |
 | EDA forex & equity (OHLC, target balance) | `notebooks/02_eda_forex_equity.ipynb` |
 | Feature analysis (importance, multicollinearity) | `notebooks/03_feature_analysis.ipynb` |
+| Tạo báo cáo HTML tổng kết EDA từ 3 notebooks | `python scripts/generate_eda_report.py --open` |
+| Xem báo cáo EDA (3 tabs: Macro · Forex/Equity · Feature Analysis) | `reports/eda_summary.html` — mở trong browser |
 
 ---
 
