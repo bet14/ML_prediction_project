@@ -187,7 +187,7 @@ code { background:var(--surface2); border:1px solid var(--border);
   <header class="header">
     <div>
       <h1>GBP/USD Direction Prediction</h1>
-      <p class="subtitle">Project Status Dashboard · 2026-06-29 10:20:34</p>
+      <p class="subtitle">Project Status Dashboard · 2026-06-29 10:48:09</p>
     </div>
     <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
       <span class="icon-moon">🌙 Dark</span>
@@ -200,30 +200,35 @@ code { background:var(--surface2); border:1px solid var(--border);
     <div class="progress-header">
       <div>
         <h2>Overall Progress</h2>
-        <p class="muted">32 of 43 items complete (BLOCKED items excluded)</p>
+        <p class="muted">32 of 52 items complete (BLOCKED items excluded)</p>
       </div>
-      <span class="pct-big" style="color:#16a34a">74%</span>
+      <span class="pct-big" style="color:#d97706">62%</span>
     </div>
     <div class="progress-track">
-      <div class="progress-fill" style="width:74%"></div>
+      <div class="progress-fill" style="width:62%"></div>
     </div>
 
     <h3 style="margin:24px 0 12px">Phase Summary</h3>
     <div class="phase-grid">
     <div class="phase-card">
-      <div class="phase-card-name">Phase 1A — Macro Raw Data</div>
+      <div class="phase-card-name">Goal 1A — Macro Raw Data</div>
       <div class="mini-bar"><div class="mini-fill" style="width:75%"></div></div>
       <div class="phase-card-stats">6/8 done <span class="warn-count">⚠ 2</span></div>
     </div>
     <div class="phase-card">
-      <div class="phase-card-name">Phase 1B — Forex Raw (13 pairs · yfinance)</div>
+      <div class="phase-card-name">Goal 1B — Forex Raw (13 pairs · yfinance)</div>
       <div class="mini-bar"><div class="mini-fill" style="width:100%"></div></div>
       <div class="phase-card-stats">13/13 done</div>
     </div>
     <div class="phase-card">
-      <div class="phase-card-name">Phase 1C — Equity Raw (9 indices · yfinance)</div>
+      <div class="phase-card-name">Goal 1C — Equity Raw (9 indices · yfinance)</div>
       <div class="mini-bar"><div class="mini-fill" style="width:100%"></div></div>
       <div class="phase-card-stats">9/9 done</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-card-name">Goal 1D — Data Gaps (Actions Needed)</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
+      <div class="phase-card-stats">0/0 done</div>
     </div>
     <div class="phase-card">
       <div class="phase-card-name">Phase 2 — Interim Panels (forward-filled daily)</div>
@@ -231,19 +236,24 @@ code { background:var(--surface2); border:1px solid var(--border);
       <div class="phase-card-stats">4/6 done</div>
     </div>
     <div class="phase-card">
-      <div class="phase-card-name">Phase 3 — Processed Datasets (ML-ready)</div>
+      <div class="phase-card-name">Goal 2 — EDA Notebooks</div>
       <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
       <div class="phase-card-stats">0/3 done</div>
     </div>
     <div class="phase-card">
-      <div class="phase-card-name">Phase 4 — Model Training</div>
+      <div class="phase-card-name">Goal 3A — Processed Datasets (ML-ready)</div>
       <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
-      <div class="phase-card-stats">0/2 done</div>
+      <div class="phase-card-stats">0/3 done</div>
     </div>
     <div class="phase-card">
-      <div class="phase-card-name">Phase 5 — Evaluation & Reporting</div>
+      <div class="phase-card-name">Goal 3B — Model & Evaluation Scripts</div>
       <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
-      <div class="phase-card-stats">0/2 done</div>
+      <div class="phase-card-stats">0/9 done</div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-card-name">Goal 4 — Streamlit Interface</div>
+      <div class="mini-bar"><div class="mini-fill" style="width:0%"></div></div>
+      <div class="phase-card-stats">0/1 done</div>
     </div>
     </div>
   </section>
@@ -254,7 +264,7 @@ code { background:var(--surface2); border:1px solid var(--border);
   <details class="phase-detail" open>
     <summary class="phase-summary">
       <span class="summary-arrow">▶</span>
-      <span>Phase 1A — Macro Raw Data</span>
+      <span>Goal 1A — Macro Raw Data</span>
     </summary>
     <div class="tbl-wrap">
       <table>
@@ -356,7 +366,7 @@ code { background:var(--surface2); border:1px solid var(--border);
   <details class="phase-detail" open>
     <summary class="phase-summary">
       <span class="summary-arrow">▶</span>
-      <span>Phase 1B — Forex Raw (13 pairs · yfinance)</span>
+      <span>Goal 1B — Forex Raw (13 pairs · yfinance)</span>
     </summary>
     <div class="tbl-wrap">
       <table>
@@ -482,7 +492,7 @@ code { background:var(--surface2); border:1px solid var(--border);
   <details class="phase-detail" open>
     <summary class="phase-summary">
       <span class="summary-arrow">▶</span>
-      <span>Phase 1C — Equity Raw (9 indices · yfinance)</span>
+      <span>Goal 1C — Equity Raw (9 indices · yfinance)</span>
     </summary>
     <div class="tbl-wrap">
       <table>
@@ -576,6 +586,60 @@ code { background:var(--surface2); border:1px solid var(--border);
   <details class="phase-detail" open>
     <summary class="phase-summary">
       <span class="summary-arrow">▶</span>
+      <span>Goal 1D — Data Gaps (Actions Needed)</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">UK GDP — ONS alt source</td>
+            <td class="col-status"><span class="badge badge-blk">BLOCKED</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"><span class="note-warn">TODO: fetch UK GDP from ONS directly (FRED series discontinued Jul-2020)</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">Composite PMI — historical data</td>
+            <td class="col-status"><span class="badge badge-blk">BLOCKED</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"><span class="note-warn">TODO: manual collection 2014–2024, no automated source available</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">UK CPI — swap to ONS alt</td>
+            <td class="col-status"><span class="badge badge-blk">BLOCKED</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"><span class="note-warn">TODO: update process_cpi.py to use UK_cpi_ons_alt.csv instead of UK_cpi.csv</span></td>
+          </tr>
+          <tr>
+            <td class="col-label">UK Current Account — add to panel</td>
+            <td class="col-status"><span class="badge badge-blk">BLOCKED</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"><span class="note-warn">TODO: update process_current_account.py to include UK_current_account.csv</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
       <span>Phase 2 — Interim Panels (forward-filled daily)</span>
     </summary>
     <div class="tbl-wrap">
@@ -646,7 +710,53 @@ code { background:var(--surface2); border:1px solid var(--border);
   <details class="phase-detail" open>
     <summary class="phase-summary">
       <span class="summary-arrow">▶</span>
-      <span>Phase 3 — Processed Datasets (ML-ready)</span>
+      <span>Goal 2 — EDA Notebooks</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">01_eda_macro.ipynb</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">02_eda_forex_equity.ipynb</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">03_feature_analysis.ipynb</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
+      <span>Goal 3A — Processed Datasets (ML-ready)</span>
     </summary>
     <div class="tbl-wrap">
       <table>
@@ -692,7 +802,7 @@ code { background:var(--surface2); border:1px solid var(--border);
   <details class="phase-detail" open>
     <summary class="phase-summary">
       <span class="summary-arrow">▶</span>
-      <span>Phase 4 — Model Training</span>
+      <span>Goal 3B — Model & Evaluation Scripts</span>
     </summary>
     <div class="tbl-wrap">
       <table>
@@ -707,6 +817,46 @@ code { background:var(--surface2); border:1px solid var(--border);
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td class="col-label">src/models/train.py</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">src/models/bayesian_search.py</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">src/evaluation/walk_forward_cv.py</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">src/evaluation/backtest.py</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
+          <tr>
+            <td class="col-label">src/evaluation/metrics.py</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
+          </tr>
           <tr>
             <td class="col-label">Trained models (.joblib / .pkl)</td>
             <td class="col-status"><span class="badge badge-emp">EMPTY</span></td>
@@ -723,28 +873,6 @@ code { background:var(--surface2); border:1px solid var(--border);
             <td class="col-mod">—</td>
             <td class="col-note"><span class="note-warn">Folder is empty</span></td>
           </tr>
-        </tbody>
-      </table>
-    </div>
-  </details>
-  <details class="phase-detail" open>
-    <summary class="phase-summary">
-      <span class="summary-arrow">▶</span>
-      <span>Phase 5 — Evaluation & Reporting</span>
-    </summary>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th class="col-label">Item</th>
-            <th class="col-status">Status</th>
-            <th class="col-num">Rows</th>
-            <th class="col-date">Date Range</th>
-            <th class="col-mod">Modified</th>
-            <th class="col-note">Note</th>
-          </tr>
-        </thead>
-        <tbody>
           <tr>
             <td class="col-label">Model comparison table</td>
             <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
@@ -760,6 +888,36 @@ code { background:var(--surface2); border:1px solid var(--border);
             <td class="col-date">—</td>
             <td class="col-mod">—</td>
             <td class="col-note"><span class="note-warn">Folder is empty</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+  <details class="phase-detail" open>
+    <summary class="phase-summary">
+      <span class="summary-arrow">▶</span>
+      <span>Goal 4 — Streamlit Interface</span>
+    </summary>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-label">Item</th>
+            <th class="col-status">Status</th>
+            <th class="col-num">Rows</th>
+            <th class="col-date">Date Range</th>
+            <th class="col-mod">Modified</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="col-label">src/app/app.py</td>
+            <td class="col-status"><span class="badge badge-miss">MISSING</span></td>
+            <td class="col-num">—</td>
+            <td class="col-date">—</td>
+            <td class="col-mod">—</td>
+            <td class="col-note"></td>
           </tr>
         </tbody>
       </table>

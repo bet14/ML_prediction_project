@@ -13,6 +13,16 @@
 3. Tra `map.md` → "muốn làm X → dùng file nào" (lookup nhanh)
 4. Đọc `PROJECT_GUIDE.md` nếu cần hiểu sâu: conventions đặt tên, flags pipeline, logic xử lý data
 
+## Khi sửa code (bắt buộc)
+
+Trước khi thay đổi bất kỳ file `.py` nào: copy file gốc sang `file_name.py.bak` cùng thư mục, rồi mới edit.
+Ví dụ: sửa `src/features/process_gdp.py` → tạo `src/features/process_gdp.py.bak` trước.
+
+## Khi tạo file mới
+
+Cập nhật `map.md` ngay lập tức — thêm dòng vào đúng section task tương ứng.
+Kiểm tra: file đó có trong `project_status.py` CHECKLIST chưa? Nếu chưa → thêm luôn.
+
 ## Khi kết thúc session (làm thủ công trước khi đóng)
 
 Thêm entry mới vào **đầu** `SESSION_LOG.md` theo template cuối file. Giữ tối đa **2 entry** — entry thứ 3 trở đi chuyển sang `SESSION_LOG_archive.md`.

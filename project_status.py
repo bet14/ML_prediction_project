@@ -26,8 +26,9 @@ RUN_LOG_PATH = PROJECT_ROOT / "reports" / "pipeline_run_log.jsonl"
 # min_rows                   → minimum rows to be considered complete
 # ─────────────────────────────────────────────────────────────
 CHECKLIST = [
+    # ── Goal 1: Thu thập dữ liệu ──────────────────────────────
     {
-        "phase": "Phase 1A — Macro Raw Data",
+        "phase": "Goal 1A — Macro Raw Data",
         "items": [
             {"label": "USA GDP",               "path": "data/raw/macro/USA_gdp.csv",               "min_rows": 40},
             {"label": "USA CPI",               "path": "data/raw/macro/USA_cpi.csv",               "min_rows": 100},
@@ -46,7 +47,7 @@ CHECKLIST = [
         ],
     },
     {
-        "phase": "Phase 1B — Forex Raw (13 pairs · yfinance)",
+        "phase": "Goal 1B — Forex Raw (13 pairs · yfinance)",
         "items": [
             {"label": "GBP/USD  (target pair)", "path": "data/raw/forex/GBP_USD.csv", "min_rows": 2500},
             {"label": "EUR/USD",                "path": "data/raw/forex/EUR_USD.csv", "min_rows": 2500},
@@ -64,7 +65,7 @@ CHECKLIST = [
         ],
     },
     {
-        "phase": "Phase 1C — Equity Raw (9 indices · yfinance)",
+        "phase": "Goal 1C — Equity Raw (9 indices · yfinance)",
         "items": [
             {"label": "S&P 500",          "path": "data/raw/equity/USA_SP500.csv",            "min_rows": 2500},
             {"label": "Nasdaq Composite", "path": "data/raw/equity/USA_NASDAQ_COMPOSITE.csv",  "min_rows": 2500},
@@ -78,6 +79,20 @@ CHECKLIST = [
         ],
     },
     {
+        "phase": "Goal 1D — Data Gaps (Actions Needed)",
+        "items": [
+            {"label": "UK GDP — ONS alt source",          "path": None,
+             "blocked": "TODO: fetch UK GDP from ONS directly (FRED series discontinued Jul-2020)"},
+            {"label": "Composite PMI — historical data",  "path": None,
+             "blocked": "TODO: manual collection 2014–2024, no automated source available"},
+            {"label": "UK CPI — swap to ONS alt",         "path": None,
+             "blocked": "TODO: update process_cpi.py to use UK_cpi_ons_alt.csv instead of UK_cpi.csv"},
+            {"label": "UK Current Account — add to panel","path": None,
+             "blocked": "TODO: update process_current_account.py to include UK_current_account.csv"},
+        ],
+    },
+    # ── Interim ───────────────────────────────────────────────
+    {
         "phase": "Phase 2 — Interim Panels (forward-filled daily)",
         "items": [
             {"label": "GDP panel",               "path": "data/interim/gdp_panel.csv",               "min_rows": 2000},
@@ -88,26 +103,43 @@ CHECKLIST = [
             {"label": "Equity panel",            "path": "data/interim/equity_panel.csv",            "min_rows": 2000},
         ],
     },
+    # ── Goal 2: EDA & Analysis ────────────────────────────────
     {
-        "phase": "Phase 3 — Processed Datasets (ML-ready)",
+        "phase": "Goal 2 — EDA Notebooks",
         "items": [
-            {"label": "Dataset 1 — Basic Daily (~130 cols)",          "path": "data/processed/dataset_basic_daily.csv",    "min_rows": 2000},
-            {"label": "Dataset 2 — 90-Day Lookback",                  "path": "data/processed/dataset_90day_lookback.csv", "min_rows": 2000},
-            {"label": "Dataset 3 — Technical Indicators (~2000 cols)","path": "data/processed/dataset_technical.csv",      "min_rows": 2000},
+            {"label": "01_eda_macro.ipynb",        "path": "notebooks/01_eda_macro.ipynb",        "is_script": True},
+            {"label": "02_eda_forex_equity.ipynb", "path": "notebooks/02_eda_forex_equity.ipynb", "is_script": True},
+            {"label": "03_feature_analysis.ipynb", "path": "notebooks/03_feature_analysis.ipynb", "is_script": True},
+        ],
+    },
+    # ── Goal 3: Model Pipeline ────────────────────────────────
+    {
+        "phase": "Goal 3A — Processed Datasets (ML-ready)",
+        "items": [
+            {"label": "Dataset 1 — Basic Daily (~130 cols)",           "path": "data/processed/dataset_basic_daily.csv",    "min_rows": 2000},
+            {"label": "Dataset 2 — 90-Day Lookback",                   "path": "data/processed/dataset_90day_lookback.csv", "min_rows": 2000},
+            {"label": "Dataset 3 — Technical Indicators (~2000 cols)", "path": "data/processed/dataset_technical.csv",      "min_rows": 2000},
         ],
     },
     {
-        "phase": "Phase 4 — Model Training",
+        "phase": "Goal 3B — Model & Evaluation Scripts",
         "items": [
-            {"label": "Trained models (.joblib / .pkl)", "path": "models/trained",        "is_dir": True},
-            {"label": "Bayesian search results",         "path": "models/search_results", "is_dir": True},
+            {"label": "src/models/train.py",                "path": "src/models/train.py",               "is_script": True},
+            {"label": "src/models/bayesian_search.py",      "path": "src/models/bayesian_search.py",     "is_script": True},
+            {"label": "src/evaluation/walk_forward_cv.py",  "path": "src/evaluation/walk_forward_cv.py", "is_script": True},
+            {"label": "src/evaluation/backtest.py",         "path": "src/evaluation/backtest.py",        "is_script": True},
+            {"label": "src/evaluation/metrics.py",          "path": "src/evaluation/metrics.py",         "is_script": True},
+            {"label": "Trained models (.joblib / .pkl)",    "path": "models/trained",                    "is_dir": True},
+            {"label": "Bayesian search results",            "path": "models/search_results",             "is_dir": True},
+            {"label": "Model comparison table",             "path": "reports/tables/model_comparison.csv","min_rows": 1},
+            {"label": "Backtest / feature plots",           "path": "reports/figures",                   "is_dir": True},
         ],
     },
+    # ── Goal 4: Interface ─────────────────────────────────────
     {
-        "phase": "Phase 5 — Evaluation & Reporting",
+        "phase": "Goal 4 — Streamlit Interface",
         "items": [
-            {"label": "Model comparison table", "path": "reports/tables/model_comparison.csv", "min_rows": 1},
-            {"label": "Backtest / feature plots","path": "reports/figures",                    "is_dir": True},
+            {"label": "src/app/app.py", "path": "src/app/app.py", "is_script": True},
         ],
     },
 ]
@@ -155,6 +187,14 @@ def check_item(item: dict) -> dict:
                     "note": "Folder is empty", "modified": ""}
         return {"status": "OK", "rows": None, "date_range": "",
                 "note": f"{len(contents)} file(s)", "modified": ""}
+
+    if item.get("is_script"):
+        if not path.exists():
+            return {"status": "MISSING", "rows": None, "date_range": "", "note": "", "modified": ""}
+        modified = datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+        kb = max(1, path.stat().st_size // 1024)
+        return {"status": "OK", "rows": None, "date_range": "",
+                "note": f"{kb} KB", "modified": modified}
 
     if not path.exists():
         return {"status": "MISSING", "rows": None, "date_range": "", "note": "", "modified": ""}
