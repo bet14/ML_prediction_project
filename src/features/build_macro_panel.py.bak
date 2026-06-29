@@ -32,9 +32,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RAW_DIR = PROJECT_ROOT / "data" / "raw" / "macro"
 DEFAULT_OUT_PATH = PROJECT_ROOT / "data" / "interim" / "macro_panel.csv"
 
+# Indicators present as raw CSVs from fetch_fred.py (id=None ones — PMI, UK current
+# account — are simply absent and skipped here; add them once sourced separately).
 INDICATORS = {
     "USA": ["gdp", "cpi", "central_bank_rate", "current_account"],
-    "UK":  ["gdp", "cpi", "central_bank_rate", "current_account"],
+    "UK": ["gdp", "cpi", "central_bank_rate"],
 }
 
 # Transform rules from the spec doc, section 3.

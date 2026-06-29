@@ -1,21 +1,34 @@
 """
-WIP -- Forex OHLC (13 pairs), daily, via yfinance (=X tickers). Dukascopy path is kept
-as WIP/reference code but is NOT needed: forex volume has been removed from project scope
-(see References/GBPUSD_ML_data_requirements_spec.md section 2.3 and References/CLAUDE.md
-item 7). yfinance OHLC is sufficient; the volume column written to CSV is always 0 and
-is ignored by process_forex.py.
+WIP -- Forex OHLCV (13 pairs), daily, with a deliberate choice between TWO sources
+controlled by --source. Read this docstring before picking one; the spec recommends
+Dukascopy but the trade-off against yfinance is real and project-specific.
 
-Why Dukascopy code still exists
----------------------------------
-The Dukascopy path (--source dukascopy) fetches tick-level data for genuine traded volume.
-It was built before the decision to drop forex volume from scope. The code is kept for
-reference -- it documents the approach for anyone who later needs real FX volume -- but
-does not need to be run for this project. The yfinance path (--source yfinance) is the
-operative choice.
+Why two sources
+----------------
+The data spec (References/GBPUSD_ML_data_requirements_spec.md, section 7) names
+dukascopy.com as the suggested forex source. Dukascopy is a real ECN/liquidity
+provider, so its tick volume is genuine traded volume -- unlike Yahoo Finance, whose
+FX "Volume" field is widely reported (by yfinance users, in GitHub issues and forums)
+to be unreliable or flatly zero for most currency pairs, because spot FX is
+decentralized and Yahoo has no consolidated tape to source volume from. Since the
+spec's per-pair OHLCV explicitly includes a volume column, this is a real data-quality
+concern, not a hypothetical one.
 
-    --source yfinance  (default)  -- OHLC via yfinance =X tickers; volume col = 0 (not used)
-    --source dukascopy            -- tick-level (~800k requests for 13 pairs, 2014-2024);
-                                     kept as reference only, not required for this project
+The cost of following the spec's recommendation: Dukascopy's free historical access
+(see "source: dukascopy" below) is at TICK level, one compressed file per pair PER
+HOUR (https://datafeed.dukascopy.com/datafeed/{PAIR}/{YYYY}/{MM}/{DD}/{HH}h_ticks.bi5).
+Building 2014-2024 daily OHLCV for 13 pairs this way means downloading, decompressing,
+and aggregating roughly 13 pairs x 11 years x 365 days x 24 hours ~= 1.25 million hourly
+files (fewer in practice -- weekends/holidays have no ticks -- but still on the order
+of 800k-900k requests). This is exactly the kind of "tick-vs-bar, light-vs-heavy" choice
+flagged as a transferable lesson in References/CLAUDE.md: implement BOTH paths and let
+whoever runs this script decide based on whether genuine volume is worth the bandwidth
+and runtime, rather than silently picking one.
+
+    --source dukascopy (default, matches the spec)  -- heavy, genuine tick-derived volume
+    --source yfinance  (=X tickers, e.g. EURUSD=X)   -- light, same mechanism as
+                                                          fetch_equity_wip.py, but volume
+                                                          column will likely be unreliable/zero
 
 STATUS as of 2026-06-19
 ------------------------

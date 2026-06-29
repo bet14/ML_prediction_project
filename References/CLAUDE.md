@@ -33,13 +33,12 @@ scraper investing.com). Áp dụng trực tiếp cho `fetch_forex_wip.py` (Dukas
 6. **Anti-bot/rate-limit là rủi ro có thật, không cố vượt qua**: nếu gặp HTTP 403,
    CAPTCHA, hoặc bảng trống bất thường — fallback sang quy trình thủ công đã ghi trong
    docstring, đây là scope boundary có chủ đích, không phải thiếu sót.
-7. **Lựa chọn nguồn nhẹ-vs-nặng cần làm rõ trade-off, không âm thầm chọn một bên**: ví
-   dụ forex — Dukascopy (tick-level, phải tự decompress/decode/aggregate, nặng nhưng có
-   volume thật) so với yfinance `=X` ticker (nhẹ, cùng cơ chế với equity, nhưng volume
-   cho FX trên Yahoo thường không đáng tin/bằng 0). Khi spec đã chỉ định nguồn (Dukascopy
-   cho forex, yfinance cho equity — section 7 của spec) nhưng có alternative nhẹ hơn,
-   nên cài cả hai đường (flag `--source`) và ghi rõ trade-off trong docstring, để người
-   chạy script tự quyết theo nhu cầu thật (cần volume thật hay chỉ cần OHLC).
+7. **Quyết định đã chốt — forex volume bị loại khỏi scope**: yfinance `=X` ticker cho FX
+   trả về volume = 0 (spot FX không có consolidated tape). Dukascopy có tick volume thật
+   nhưng rất nặng (~800k requests). Sau khi đánh giá, **volume không đưa vào model** —
+   chỉ dùng OHLC cho 13 FX pairs. Script `fetch_forex_wip.py` vẫn giữ cột `volume` trong
+   CSV (= 0) nhưng `process_forex.py` sẽ bỏ qua cột này khi build panel. Dukascopy path
+   trong script giữ nguyên như tài liệu WIP, không cần chạy.
 
 ## Môi trường Cowork — lỗi đã gặp, cách workaround
 

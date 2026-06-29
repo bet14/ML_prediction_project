@@ -1,6 +1,4 @@
 # reports/
-
-- `macro_data_status.html` — live dashboard: raw/interim macro file inventory, current errors/warnings, alternative-API research (ONS candidates for UK CPI/current account, Composite PMI investigation)
 - `pipeline_run_log.jsonl` — one JSON line per `run_fred_pipeline.py` invocation (timestamp, mode, per-script returncode/duration, success); appended automatically, not hand-edited
 - `figures/` — images: feature importance (SHAP/tree), backtest charts, accuracy-vs-profit divergence, ...
 - `tables/` — tables: `model_comparison.csv` (21 models x 3 datasets), per-fold metrics tables, ...

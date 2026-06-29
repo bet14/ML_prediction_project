@@ -46,18 +46,18 @@ The paper includes every major pair touching either target currency (EUR or USD)
 
 AUD/USD, EUR/USD, EUR/GBP, GBP/AUD, GBP/CAD, GBP/CHF, GBP/JPY, GBP/NZD, GBP/USD, NZD/USD, USD/CAD, USD/CHF, USD/JPY — 13 pairs.
 
-Each contributes open, close, low, high, volume → 65 columns.
+Each contributes open, close, low, high → 52 columns. (Volume excluded — yfinance FX volume = 0; spot FX has no consolidated tape.)
 
 ### 2.4 Technical indicators (dataset 3 only)
 
-Same 16 indicator families as Table 1 of the paper, computed independently per instrument from that instrument's own OHLCV series. C/V/H/L(t) are close/volume/high/low at day t; HH/LL(i,j) are the highest/lowest price between days i and j; Up/Dw(t) are the day's upward/downward price change; M(t)=(H(t)+L(t)+C(t))/3; SM(t) = N-day mean of M; D(t) = N-day mean of (M − SM); EMA = exponential moving average.
+Same indicator families as Table 1 of the paper, computed independently per instrument from that instrument's own OHLC(V) series. Rows 3–4 (volume MAs) apply to equity indices only — forex volume is excluded (see section 2.3). C/H/L(t) are close/high/low at day t; HH/LL(i,j) are the highest/lowest price between days i and j; Up/Dw(t) are the day's upward/downward price change; M(t)=(H(t)+L(t)+C(t))/3; SM(t) = N-day mean of M; D(t) = N-day mean of (M − SM); EMA = exponential moving average.
 
-| # | Name | Formula (informal) | Parameter range |
-|---|---|---|---|
-| 1 | Simple N-day MA (close) | mean of C(t)..C(t-N+1) | N ∈ {3,7,14,30,60,90} |
-| 2 | Weighted N-day MA (close) | weighted mean of C(t-i), weight (N-i) | N ∈ {3,7,14,30,60,90} |
-| 3 | Simple N-day MA (volume) | mean of V(t)..V(t-N+1) | N ∈ {3,7,14,30,60,90} |
-| 4 | Weighted N-day MA (volume) | weighted mean of V(t-i), weight (N-i) | N ∈ {3,7,14,30,60,90} |
+| # | Name | Formula (informal) | Parameter range | Applies to |
+|---|---|---|---|---|
+| 1 | Simple N-day MA (close) | mean of C(t)..C(t-N+1) | N ∈ {3,7,14,30,60,90} | all |
+| 2 | Weighted N-day MA (close) | weighted mean of C(t-i), weight (N-i) | N ∈ {3,7,14,30,60,90} | all |
+| 3 | Simple N-day MA (volume) | mean of V(t)..V(t-N+1) | N ∈ {3,7,14,30,60,90} | equity only |
+| 4 | Weighted N-day MA (volume) | weighted mean of V(t-i), weight (N-i) | N ∈ {3,7,14,30,60,90} | equity only |
 | 5 | Momentum N-day | C(t) − C(t-N) | N ∈ {1,2,3,7,14,30,60,90} |
 | 6 | Stochastic K% N-day | 100·(C(t)−LL)/(HH−LL) over window N | N ∈ {1,2,3,7,14,30,60,90} |
 | 7 | Stochastic D% N-day | N-day mean of Stochastic K% | N ∈ {1,2,3,7,14,30,60,90} |
@@ -71,7 +71,7 @@ Same 16 indicator families as Table 1 of the paper, computed independently per i
 | 15 | MACD N-fast/M-slow | EMA_N(t) − EMA_M(t) | (N,M) ∈ {(7,21),(12,26),(20,34)} |
 | 16 | MACD N/M/P-signal | EMA_P of MACD_N,M(t) | (N,M,P) ∈ {(7,21,4),(12,26,9),(20,34,17)} |
 
-Per-instrument column count ≈ 92 (summing all N/M/P combinations above). Across 9 indices + 13 pairs = 22 instruments, dataset 3 adds roughly **2,000 columns** — by far the largest feature block. This is why the paper relies on Bayesian-search feature selection rather than feeding all of them at once; plan the same trimming step here.
+Per-instrument column count ≈ 92 for equity (all families); ≈ 80 for forex (rows 3–4 excluded). Across 9 indices (×92) + 13 pairs (×80) = 828 + 1,040, dataset 3 adds roughly **1,870 columns** — by far the largest feature block. This is why the paper relies on Bayesian-search feature selection rather than feeding all of them at once; plan the same trimming step here.
 
 ## 3. Processing pipeline
 
@@ -79,7 +79,7 @@ Per-instrument column count ≈ 92 (summing all N/M/P combinations above). Acros
 
 **Transforms:**
 - log transform → UK CPI YoY (mirrors the paper's EA CPI YoY log transform; same right-skew rationale)
-- sqrt transform → both central bank rates (Bank Rate, Fed Funds Rate) and every volume column (indices + forex pairs)
+- sqrt transform → both central bank rates (Bank Rate, Fed Funds Rate) and every equity index volume column (forex volume excluded — see section 2.3)
 
 **Date encoding:**
 - Tree-based models: day (int), month (int), weekday (int) — ordinal, no one-hot
@@ -120,13 +120,13 @@ Market index OHLCV (2024-03-15), two of nine shown:
 | FTSE100 | 7738 | 7722 | 7705 | 7745 | 750,000 |
 | S&P500 | 5170 | 5117 | 5104 | 5176 | 3,200,000 |
 
-Forex pair OHLCV (2024-03-15), three of thirteen shown:
+Forex pair OHLC (2024-03-15), three of thirteen shown (volume excluded):
 
-| Pair | Open | Close | Low | High | Volume |
-|---|---|---|---|---|---|
-| GBP/USD | 1.2750 | 1.2730 | 1.2705 | 1.2765 | 185,000 |
-| EUR/USD | 1.0890 | 1.0880 | 1.0855 | 1.0900 | 210,000 |
-| GBP/JPY | 192.40 | 191.80 | 191.50 | 192.80 | 95,000 |
+| Pair | Open | Close | Low | High |
+|---|---|---|---|---|
+| GBP/USD | 1.2750 | 1.2730 | 1.2705 | 1.2765 |
+| EUR/USD | 1.0890 | 1.0880 | 1.0855 | 1.0900 |
+| GBP/JPY | 192.40 | 191.80 | 191.50 | 192.80 |
 
 ### 5.2 After transform
 
@@ -135,10 +135,7 @@ Forex pair OHLCV (2024-03-15), three of thirteen shown:
 | UK CPI YoY | 3.4 | ln(x) | 1.2238 |
 | UK Bank Rate | 5.25 | sqrt(x) | 2.2913 |
 | US Fed Funds Rate | 5.50 | sqrt(x) | 2.3452 |
-| GBP/USD volume | 185,000 | sqrt(x) | 430.12 |
 | FTSE100 volume | 750,000 | sqrt(x) | 866.03 |
-| EUR/USD volume | 210,000 | sqrt(x) | 458.26 |
-| GBP/JPY volume | 95,000 | sqrt(x) | 308.22 |
 
 ### 5.3 Date encoding (2024-03-15, Friday, day-of-year 75 in a leap year)
 

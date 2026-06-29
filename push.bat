@@ -1,4 +1,4 @@
 @echo off
 cd /d %~dp0
-python auto_push.py %*
+python scripts\auto_push.py %*
 pause
