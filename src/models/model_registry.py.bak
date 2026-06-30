@@ -1,0 +1,138 @@
+"""
+model_registry.py -- Central registry of all ML models for GBP/USD prediction.
+
+To add a new model:
+  1. Write _build_<name>(params) -> sklearn estimator
+  2. Write _suggest_<name>(trial) -> dict  (Optuna trial)
+  3. Add one entry to REGISTRY below
+
+No other file needs to change.
+
+'scale' = True means the pipeline adds RobustScaler before the estimator
+         (needed for distance/gradient-based models: LR, MLP).
+"""
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+
+# ---------------------------------------------------------------------------
+# Build functions -- return a bare (unfitted) sklearn estimator
+# XGB and LGBM use lazy imports so the registry loads even when not installed
+# ---------------------------------------------------------------------------
+
+def _build_lr(p: dict):
+    return LogisticRegression(
+        C=p.get("C", 1.0),
+        penalty=p.get("penalty", "l2"),
+        solver="saga",
+        max_iter=2000,
+        random_state=42,
+    )
+
+
+def _build_rf(p: dict):
+    return RandomForestClassifier(
+        n_estimators=p.get("n_estimators", 200),
+        max_depth=p.get("max_depth", None),
+        min_samples_leaf=p.get("min_samples_leaf", 1),
+        random_state=42,
+        n_jobs=-1,
+    )
+
+
+def _build_xgb(p: dict):
+    from xgboost import XGBClassifier  # lazy import
+    return XGBClassifier(
+        n_estimators=p.get("n_estimators", 200),
+        learning_rate=p.get("learning_rate", 0.05),
+        max_depth=p.get("max_depth", 4),
+        subsample=p.get("subsample", 0.8),
+        eval_metric="logloss",
+        random_state=42,
+        verbosity=0,
+    )
+
+
+def _build_lgbm(p: dict):
+    from lightgbm import LGBMClassifier  # lazy import
+    return LGBMClassifier(
+        n_estimators=p.get("n_estimators", 200),
+        learning_rate=p.get("learning_rate", 0.05),
+        num_leaves=p.get("num_leaves", 31),
+        random_state=42,
+        n_jobs=-1,
+        verbose=-1,
+    )
+
+
+def _build_mlp(p: dict):
+    sizes = p.get("hidden_layer_sizes", [64, 32])
+    return MLPClassifier(
+        hidden_layer_sizes=tuple(sizes),
+        learning_rate_init=p.get("learning_rate_init", 0.001),
+        alpha=p.get("alpha", 1e-4),
+        max_iter=500,
+        random_state=42,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Suggest functions -- map an Optuna trial to a params dict
+# Return value must be JSON-serialisable (lists not tuples for hidden_layer_sizes)
+# ---------------------------------------------------------------------------
+
+def _suggest_lr(trial) -> dict:
+    return {
+        "C": trial.suggest_float("C", 1e-3, 10.0, log=True),
+        "penalty": trial.suggest_categorical("penalty", ["l1", "l2"]),
+    }
+
+
+def _suggest_rf(trial) -> dict:
+    return {
+        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "max_depth": trial.suggest_int("max_depth", 3, 20),
+        "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
+    }
+
+
+def _suggest_xgb(trial) -> dict:
+    return {
+        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "max_depth": trial.suggest_int("max_depth", 2, 8),
+        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+    }
+
+
+def _suggest_lgbm(trial) -> dict:
+    return {
+        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "num_leaves": trial.suggest_int("num_leaves", 15, 127),
+    }
+
+
+def _suggest_mlp(trial) -> dict:
+    n_layers = trial.suggest_int("n_layers", 1, 3)
+    layer_size = trial.suggest_int("layer_size", 32, 256)
+    return {
+        "hidden_layer_sizes": [layer_size] * n_layers,  # list = JSON-safe
+        "learning_rate_init": trial.suggest_float("learning_rate_init", 1e-4, 1e-2, log=True),
+        "alpha": trial.suggest_float("alpha", 1e-5, 1e-2, log=True),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Registry -- single source of truth for all models
+# Adding a new model: add _build_X + _suggest_X above, then one entry here
+# ---------------------------------------------------------------------------
+
+REGISTRY: dict = {
+    "LR":   {"build": _build_lr,   "suggest": _suggest_lr,   "scale": True},
+    "RF":   {"build": _build_rf,   "suggest": _suggest_rf,   "scale": False},
+    "XGB":  {"build": _build_xgb,  "suggest": _suggest_xgb,  "scale": False},
+    "LGBM": {"build": _build_lgbm, "suggest": _suggest_lgbm, "scale": False},
+    "MLP":  {"build": _build_mlp,  "suggest": _suggest_mlp,  "scale": True},
+}

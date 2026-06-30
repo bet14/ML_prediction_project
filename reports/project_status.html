@@ -237,7 +237,7 @@ code { background:var(--surface2); border:1px solid var(--border);
   <header class="header">
     <div>
       <h1>GBP/USD Direction Prediction</h1>
-      <p class="subtitle">Project Status Dashboard · 2026-06-29 15:03:13</p>
+      <p class="subtitle">Project Status Dashboard · 2026-06-30 08:16:26</p>
     </div>
     <button class="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">
       <span class="icon-moon">🌙 Dark</span>
@@ -715,24 +715,24 @@ code { background:var(--surface2); border:1px solid var(--border);
             <td class="col-status"><span class="badge badge-ok">OK</span></td>
             <td class="col-num">—</td>
             <td class="col-date">—</td>
-            <td class="col-mod">2026-06-29 14:20</td>
-            <td class="col-note">89 KB</td>
+            <td class="col-mod">2026-06-29 15:36</td>
+            <td class="col-note">92 KB</td>
           </tr>
           <tr>
             <td class="col-label">02_eda_forex_equity.ipynb</td>
             <td class="col-status"><span class="badge badge-ok">OK</span></td>
             <td class="col-num">—</td>
             <td class="col-date">—</td>
-            <td class="col-mod">2026-06-29 12:56</td>
-            <td class="col-note">1079 KB</td>
+            <td class="col-mod">2026-06-29 15:36</td>
+            <td class="col-note">1082 KB</td>
           </tr>
           <tr>
             <td class="col-label">03_feature_analysis.ipynb</td>
             <td class="col-status"><span class="badge badge-ok">OK</span></td>
             <td class="col-num">—</td>
             <td class="col-date">—</td>
-            <td class="col-mod">2026-06-29 14:25</td>
-            <td class="col-note">468 KB</td>
+            <td class="col-mod">2026-06-29 15:36</td>
+            <td class="col-note">470 KB</td>
           </tr>
         </tbody>
       </table>
@@ -1005,7 +1005,7 @@ code { background:var(--surface2); border:1px solid var(--border);
   <!-- ── CHECKLIST TAB ── -->
   
   <div id="tab-checklist" class="tab-pane" style="display:none">
-    <script>var AUTO_CHECKS = {"cl1_1": true, "cl1_2": true, "cl1_3": true, "cl2_1": true, "cl2_2": true, "cl2_3": true};</script>
+    <script>var AUTO_CHECKS = {"cl1_1": true, "cl1_2": true, "cl1_3": true, "cl2_1": true, "cl2_2": true, "cl2_3": true, "cl2_4": true, "cl3_1": false, "cl3_2": false, "cl3_3": false, "cl3_4": false, "cl3_5": false, "cl3_6": false, "cl3_8": false, "cl3_9": false, "cl4_1": false, "cl4_2": false, "cl4_3": false, "cl4_4": false, "cl4_5": false, "cl5_1": false, "cl5_2": false, "cl5_3": false, "cl6_6": false, "cl7_1": false};</script>
 
     <div class="cl-topbar">
       <div class="cl-overall-wrap">
@@ -1027,10 +1027,10 @@ code { background:var(--surface2); border:1px solid var(--border);
         <div class="cl-stage-head" onclick="clToggleStage('cl1')">
           <span class="cl-stage-arrow">&#9660;</span>
           <span class="cl-stage-title">Setup & Data Collection</span>
-          <span class="cl-stage-count" id="clcount-cl1">3/4</span>
+          <span class="cl-stage-count" id="clcount-cl1">3/3</span>
           <div class="cl-mini-bar">
             <div class="cl-mini-fill" id="clbar-cl1"
-                 style="width:75%"></div>
+                 style="width:100%"></div>
           </div>
         </div>
         <div class="cl-stage-body" id="clbody-cl1">
@@ -1049,21 +1049,16 @@ code { background:var(--surface2); border:1px solid var(--border);
                  onchange="clToggle('cl1_3')">
           <label for="chk-cl1_3" class="cl-label">Macro release dates used (days_since_update columns) — no look-ahead bias<span class="cl-auto-badge">auto</span></label>
         </div>
-        <div class="cl-item" id="wrap-cl1_4">
-          <input type="checkbox" id="chk-cl1_4"   
-                 onchange="clToggle('cl1_4')">
-          <label for="chk-cl1_4" class="cl-label">UK/US bank holidays cross-checked; mismatched sessions excluded</label>
-        </div>
         </div>
       </div>
       <div class="cl-stage" id="clstage-cl2">
         <div class="cl-stage-head" onclick="clToggleStage('cl2')">
           <span class="cl-stage-arrow">&#9660;</span>
           <span class="cl-stage-title">EDA & Target Definition</span>
-          <span class="cl-stage-count" id="clcount-cl2">3/4</span>
+          <span class="cl-stage-count" id="clcount-cl2">4/4</span>
           <div class="cl-mini-bar">
             <div class="cl-mini-fill" id="clbar-cl2"
-                 style="width:75%"></div>
+                 style="width:100%"></div>
           </div>
         </div>
         <div class="cl-stage-body" id="clbody-cl2">
@@ -1083,17 +1078,17 @@ code { background:var(--surface2); border:1px solid var(--border);
           <label for="chk-cl2_3" class="cl-label">CPI YoY and log transforms applied<span class="cl-auto-badge">auto</span></label>
         </div>
         <div class="cl-item" id="wrap-cl2_4">
-          <input type="checkbox" id="chk-cl2_4"   
+          <input type="checkbox" id="chk-cl2_4" checked disabled title="Auto-detected from filesystem" data-auto="1"
                  onchange="clToggle('cl2_4')">
-          <label for="chk-cl2_4" class="cl-label">Stationarity confirmed: non-stationary series (GDP, CPI level) → use YoY/diff in models</label>
+          <label for="chk-cl2_4" class="cl-label">Stationarity confirmed: non-stationary series (GDP, CPI level) → use YoY/diff in models<span class="cl-auto-badge">auto</span></label>
         </div>
         </div>
       </div>
       <div class="cl-stage" id="clstage-cl3">
         <div class="cl-stage-head" onclick="clToggleStage('cl3')">
           <span class="cl-stage-arrow">&#9660;</span>
-          <span class="cl-stage-title">Feature Engineering</span>
-          <span class="cl-stage-count" id="clcount-cl3">0/2</span>
+          <span class="cl-stage-title">Goal 3A — Build Processed Datasets</span>
+          <span class="cl-stage-count" id="clcount-cl3">0/10</span>
           <div class="cl-mini-bar">
             <div class="cl-mini-fill" id="clbar-cl3"
                  style="width:0%"></div>
@@ -1101,22 +1096,62 @@ code { background:var(--surface2); border:1px solid var(--border);
         </div>
         <div class="cl-stage-body" id="clbody-cl3">
         <div class="cl-item" id="wrap-cl3_1">
-          <input type="checkbox" id="chk-cl3_1"   
+          <input type="checkbox" id="chk-cl3_1"  disabled title="Auto-detected from filesystem" data-auto="1"
                  onchange="clToggle('cl3_1')">
-          <label for="chk-cl3_1" class="cl-label">Date encoding decided: ordinal day-of-year for tree models; sin/cos for SVM/LR/KNN</label>
+          <label for="chk-cl3_1" class="cl-label">build_dataset.py created (src/features/build_dataset.py)<span class="cl-auto-badge">auto</span></label>
         </div>
         <div class="cl-item" id="wrap-cl3_2">
-          <input type="checkbox" id="chk-cl3_2"   
+          <input type="checkbox" id="chk-cl3_2"  disabled title="Auto-detected from filesystem" data-auto="1"
                  onchange="clToggle('cl3_2')">
-          <label for="chk-cl3_2" class="cl-label">Technical indicators confirmed: SMA, WMA, RSI, MACD, Stochastic, Momentum, CCI, ROC, Williams %R, A/D, Disparity, OSCP</label>
+          <label for="chk-cl3_2" class="cl-label">Dataset 1 Basic Daily built — data/processed/dataset_basic_daily.csv (≥2000 rows)<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl3_3">
+          <input type="checkbox" id="chk-cl3_3"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl3_3')">
+          <label for="chk-cl3_3" class="cl-label">Target column Direction present in Dataset 1<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl3_4">
+          <input type="checkbox" id="chk-cl3_4"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl3_4')">
+          <label for="chk-cl3_4" class="cl-label">Synthetic feature rate_differential (Fed − BoE) added to Dataset 1<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl3_5">
+          <input type="checkbox" id="chk-cl3_5"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl3_5')">
+          <label for="chk-cl3_5" class="cl-label">Date encoding present — weekday column (int, 0=Mon) in Dataset 1<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl3_6">
+          <input type="checkbox" id="chk-cl3_6"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl3_6')">
+          <label for="chk-cl3_6" class="cl-label">Cyclical date encoding present — day_sin/day_cos columns in Dataset 1<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl3_7">
+          <input type="checkbox" id="chk-cl3_7"   
+                 onchange="clToggle('cl3_7')">
+          <label for="chk-cl3_7" class="cl-label">Redundant equity cols dropped: FTSE350/ALL_SHARE/FTSE250/DJI/NASDAQ_COMPOSITE (r > 0.85)</label>
+        </div>
+        <div class="cl-item" id="wrap-cl3_8">
+          <input type="checkbox" id="chk-cl3_8"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl3_8')">
+          <label for="chk-cl3_8" class="cl-label">Dataset 2 — 90-Day Lookback built (data/processed/dataset_90day_lookback.csv)<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl3_9">
+          <input type="checkbox" id="chk-cl3_9"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl3_9')">
+          <label for="chk-cl3_9" class="cl-label">Dataset 3 — Technical Indicators built (data/processed/dataset_technical.csv)<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl3_10">
+          <input type="checkbox" id="chk-cl3_10"   
+                 onchange="clToggle('cl3_10')">
+          <label for="chk-cl3_10" class="cl-label">All 16 technical indicator families computed per instrument (spec section 2.4)</label>
         </div>
         </div>
       </div>
       <div class="cl-stage" id="clstage-cl4">
         <div class="cl-stage-head" onclick="clToggleStage('cl4')">
           <span class="cl-stage-arrow">&#9660;</span>
-          <span class="cl-stage-title">Model Training & Cross-Validation</span>
-          <span class="cl-stage-count" id="clcount-cl4">0/3</span>
+          <span class="cl-stage-title">Goal 3B — Model & Evaluation Scripts</span>
+          <span class="cl-stage-count" id="clcount-cl4">0/5</span>
           <div class="cl-mini-bar">
             <div class="cl-mini-fill" id="clbar-cl4"
                  style="width:0%"></div>
@@ -1124,27 +1159,37 @@ code { background:var(--surface2); border:1px solid var(--border);
         </div>
         <div class="cl-stage-body" id="clbody-cl4">
         <div class="cl-item" id="wrap-cl4_1">
-          <input type="checkbox" id="chk-cl4_1"   
+          <input type="checkbox" id="chk-cl4_1"  disabled title="Auto-detected from filesystem" data-auto="1"
                  onchange="clToggle('cl4_1')">
-          <label for="chk-cl4_1" class="cl-label">Walk-forward CV folds confirmed: train 2014–2020 / validate 2021–2022 / test 2023</label>
+          <label for="chk-cl4_1" class="cl-label">walk_forward_cv.py created (src/evaluation/walk_forward_cv.py)<span class="cl-auto-badge">auto</span></label>
         </div>
         <div class="cl-item" id="wrap-cl4_2">
-          <input type="checkbox" id="chk-cl4_2"   
+          <input type="checkbox" id="chk-cl4_2"  disabled title="Auto-detected from filesystem" data-auto="1"
                  onchange="clToggle('cl4_2')">
-          <label for="chk-cl4_2" class="cl-label">PCA decorrelation tested (with vs. without) — accuracy compared</label>
+          <label for="chk-cl4_2" class="cl-label">metrics.py created (src/evaluation/metrics.py)<span class="cl-auto-badge">auto</span></label>
         </div>
         <div class="cl-item" id="wrap-cl4_3">
-          <input type="checkbox" id="chk-cl4_3"   
+          <input type="checkbox" id="chk-cl4_3"  disabled title="Auto-detected from filesystem" data-auto="1"
                  onchange="clToggle('cl4_3')">
-          <label for="chk-cl4_3" class="cl-label">Meta-estimator stacking (2-stage) experimented with</label>
+          <label for="chk-cl4_3" class="cl-label">train.py created (src/models/train.py) — LR, RF, XGB, LGBM, MLP<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl4_4">
+          <input type="checkbox" id="chk-cl4_4"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl4_4')">
+          <label for="chk-cl4_4" class="cl-label">bayesian_search.py created (src/models/bayesian_search.py)<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl4_5">
+          <input type="checkbox" id="chk-cl4_5"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl4_5')">
+          <label for="chk-cl4_5" class="cl-label">backtest.py created (src/evaluation/backtest.py)<span class="cl-auto-badge">auto</span></label>
         </div>
         </div>
       </div>
       <div class="cl-stage" id="clstage-cl5">
         <div class="cl-stage-head" onclick="clToggleStage('cl5')">
           <span class="cl-stage-arrow">&#9660;</span>
-          <span class="cl-stage-title">Evaluation Quality</span>
-          <span class="cl-stage-count" id="clcount-cl5">0/5</span>
+          <span class="cl-stage-title">Goal 3B — Training Results</span>
+          <span class="cl-stage-count" id="clcount-cl5">0/7</span>
           <div class="cl-mini-bar">
             <div class="cl-mini-fill" id="clbar-cl5"
                  style="width:0%"></div>
@@ -1152,37 +1197,47 @@ code { background:var(--surface2); border:1px solid var(--border);
         </div>
         <div class="cl-stage-body" id="clbody-cl5">
         <div class="cl-item" id="wrap-cl5_1">
-          <input type="checkbox" id="chk-cl5_1"   
+          <input type="checkbox" id="chk-cl5_1"  disabled title="Auto-detected from filesystem" data-auto="1"
                  onchange="clToggle('cl5_1')">
-          <label for="chk-cl5_1" class="cl-label">Results compared vs. 50% random baseline</label>
+          <label for="chk-cl5_1" class="cl-label">At least 1 trained model saved (models/trained/ — .joblib or .pkl)<span class="cl-auto-badge">auto</span></label>
         </div>
         <div class="cl-item" id="wrap-cl5_2">
-          <input type="checkbox" id="chk-cl5_2"   
+          <input type="checkbox" id="chk-cl5_2"  disabled title="Auto-detected from filesystem" data-auto="1"
                  onchange="clToggle('cl5_2')">
-          <label for="chk-cl5_2" class="cl-label">Accuracy vs. profit divergence analyzed</label>
+          <label for="chk-cl5_2" class="cl-label">Bayesian hyperparameter search results saved (models/search_results/)<span class="cl-auto-badge">auto</span></label>
         </div>
         <div class="cl-item" id="wrap-cl5_3">
-          <input type="checkbox" id="chk-cl5_3"   
+          <input type="checkbox" id="chk-cl5_3"  disabled title="Auto-detected from filesystem" data-auto="1"
                  onchange="clToggle('cl5_3')">
-          <label for="chk-cl5_3" class="cl-label">Sensitivity analysis: 1–2 pip GBP/USD spread applied to cumulative P(t)</label>
+          <label for="chk-cl5_3" class="cl-label">Model comparison table generated (reports/tables/model_comparison.csv)<span class="cl-auto-badge">auto</span></label>
         </div>
         <div class="cl-item" id="wrap-cl5_4">
           <input type="checkbox" id="chk-cl5_4"   
                  onchange="clToggle('cl5_4')">
-          <label for="chk-cl5_4" class="cl-label">High-volatility days flagged / excluded: BoE rate decisions, UK CPI, political events</label>
+          <label for="chk-cl5_4" class="cl-label">Walk-forward folds: expanding train 2014→N, test year N+1, final test 2024</label>
         </div>
         <div class="cl-item" id="wrap-cl5_5">
           <input type="checkbox" id="chk-cl5_5"   
                  onchange="clToggle('cl5_5')">
-          <label for="chk-cl5_5" class="cl-label">Evaluation mode 2 completed: monthly rolling re-fit on test year</label>
+          <label for="chk-cl5_5" class="cl-label">RobustScaler applied to LR + MLP only (high kurtosis confirmed in EDA)</label>
+        </div>
+        <div class="cl-item" id="wrap-cl5_6">
+          <input type="checkbox" id="chk-cl5_6"   
+                 onchange="clToggle('cl5_6')">
+          <label for="chk-cl5_6" class="cl-label">All 5 model families trained: LR, Random Forest, XGBoost, LightGBM, MLP</label>
+        </div>
+        <div class="cl-item" id="wrap-cl5_7">
+          <input type="checkbox" id="chk-cl5_7"   
+                 onchange="clToggle('cl5_7')">
+          <label for="chk-cl5_7" class="cl-label">PCA decorrelation tested (with vs. without) — accuracy delta recorded</label>
         </div>
         </div>
       </div>
       <div class="cl-stage" id="clstage-cl6">
         <div class="cl-stage-head" onclick="clToggleStage('cl6')">
           <span class="cl-stage-arrow">&#9660;</span>
-          <span class="cl-stage-title">Presentation & Wrap-up</span>
-          <span class="cl-stage-count" id="clcount-cl6">0/3</span>
+          <span class="cl-stage-title">Goal 3B — Evaluation Quality</span>
+          <span class="cl-stage-count" id="clcount-cl6">0/6</span>
           <div class="cl-mini-bar">
             <div class="cl-mini-fill" id="clbar-cl6"
                  style="width:0%"></div>
@@ -1192,17 +1247,65 @@ code { background:var(--surface2); border:1px solid var(--border);
         <div class="cl-item" id="wrap-cl6_1">
           <input type="checkbox" id="chk-cl6_1"   
                  onchange="clToggle('cl6_1')">
-          <label for="chk-cl6_1" class="cl-label">Results compiled into slides / report</label>
+          <label for="chk-cl6_1" class="cl-label">Results compared vs. 50% random baseline — documented in model_comparison.csv</label>
         </div>
         <div class="cl-item" id="wrap-cl6_2">
           <input type="checkbox" id="chk-cl6_2"   
                  onchange="clToggle('cl6_2')">
-          <label for="chk-cl6_2" class="cl-label">Live Streamlit demo prepared and tested</label>
+          <label for="chk-cl6_2" class="cl-label">Sharpe proxy calculated; target > 0.3 on best model</label>
         </div>
         <div class="cl-item" id="wrap-cl6_3">
           <input type="checkbox" id="chk-cl6_3"   
                  onchange="clToggle('cl6_3')">
-          <label for="chk-cl6_3" class="cl-label">References double-checked (APA 7th)</label>
+          <label for="chk-cl6_3" class="cl-label">Sensitivity analysis: 1–2 pip GBP/USD spread applied to cumulative P(t)</label>
+        </div>
+        <div class="cl-item" id="wrap-cl6_4">
+          <input type="checkbox" id="chk-cl6_4"   
+                 onchange="clToggle('cl6_4')">
+          <label for="chk-cl6_4" class="cl-label">High-volatility days flagged: BoE rate decisions, UK CPI releases, political events</label>
+        </div>
+        <div class="cl-item" id="wrap-cl6_5">
+          <input type="checkbox" id="chk-cl6_5"   
+                 onchange="clToggle('cl6_5')">
+          <label for="chk-cl6_5" class="cl-label">Evaluation mode 2: monthly rolling re-fit on the final test year (2024)</label>
+        </div>
+        <div class="cl-item" id="wrap-cl6_6">
+          <input type="checkbox" id="chk-cl6_6"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl6_6')">
+          <label for="chk-cl6_6" class="cl-label">Backtest equity curves generated (reports/figures/equity_curve_*.png)<span class="cl-auto-badge">auto</span></label>
+        </div>
+        </div>
+      </div>
+      <div class="cl-stage" id="clstage-cl7">
+        <div class="cl-stage-head" onclick="clToggleStage('cl7')">
+          <span class="cl-stage-arrow">&#9660;</span>
+          <span class="cl-stage-title">Goal 4 & Wrap-up</span>
+          <span class="cl-stage-count" id="clcount-cl7">0/4</span>
+          <div class="cl-mini-bar">
+            <div class="cl-mini-fill" id="clbar-cl7"
+                 style="width:0%"></div>
+          </div>
+        </div>
+        <div class="cl-stage-body" id="clbody-cl7">
+        <div class="cl-item" id="wrap-cl7_1">
+          <input type="checkbox" id="chk-cl7_1"  disabled title="Auto-detected from filesystem" data-auto="1"
+                 onchange="clToggle('cl7_1')">
+          <label for="chk-cl7_1" class="cl-label">Streamlit app built (src/app/app.py)<span class="cl-auto-badge">auto</span></label>
+        </div>
+        <div class="cl-item" id="wrap-cl7_2">
+          <input type="checkbox" id="chk-cl7_2"   
+                 onchange="clToggle('cl7_2')">
+          <label for="chk-cl7_2" class="cl-label">Live Streamlit demo prepared and tested</label>
+        </div>
+        <div class="cl-item" id="wrap-cl7_3">
+          <input type="checkbox" id="chk-cl7_3"   
+                 onchange="clToggle('cl7_3')">
+          <label for="chk-cl7_3" class="cl-label">Results compiled into slides / report</label>
+        </div>
+        <div class="cl-item" id="wrap-cl7_4">
+          <input type="checkbox" id="chk-cl7_4"   
+                 onchange="clToggle('cl7_4')">
+          <label for="chk-cl7_4" class="cl-label">References double-checked (APA 7th)</label>
         </div>
         </div>
       </div>

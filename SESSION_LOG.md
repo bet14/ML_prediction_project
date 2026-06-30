@@ -5,6 +5,190 @@
 
 ---
 
+## 2026-06-30 10:30 — Goal 3B: full model pipeline + 12 fast models trained
+
+**Branch:** branch_lee
+
+**Done:**
+
+### src/evaluation/walk_forward_cv.py — new file
+- Expanding-window CV: 6 folds (train 2014→N, test year N+1; final test 2024)
+- `get_folds(df)` returns list of `(X_train, y_train, X_test, y_test)` tuples
+- `describe_folds()` prints date ranges and sizes
+- Verified: Fold 1 train=1303 rows / test=261; Final train=2607 / test=261
+
+### src/evaluation/metrics.py — new file
+- Pure function `compute_metrics(y_true, y_pred, y_proba, returns)` → dict
+- Metrics: accuracy, f1_macro, auc_roc, sharpe_proxy (annualised, 252-day), max_drawdown
+- Missing inputs → None (not NaN) for auc_roc / sharpe / drawdown
+
+### src/models/preprocessing.py — new file
+- `InfinityToNaNTransformer` (sklearn BaseEstimator + TransformerMixin)
+- Replaces +/-inf with NaN before SimpleImputer step
+- Root cause: `UK_cpi_yoy_log` becomes -inf during UK deflation (2015) — log of negative CPI YoY
+- Defined in separate file so joblib can deserialise Pipeline from any script (avoids `__main__` pickling issue)
+
+### src/models/model_registry.py — new file (central registry, 22 models)
+- Pattern: to add a new model, write `_build_X(params)` + `_suggest_X(trial)` + 1 entry in `REGISTRY`
+- `train.py` and `bayesian_search.py` need no changes when adding models
+- `scale` flag per entry: True → RobustScaler added in pipeline (LR, KNN, SVM, MLP, Bagging_LR, Bagging_KNN, Bagging_SVM_*)
+- Speed tags exported: `FAST_MODELS` (12), `MEDIUM_MODELS` (3), `SLOW_MODELS` (7)
+- All 22 models: LR, RF, XGB, LGBM, MLP, KNN, DT, ET, HGB, CatBoost, Bagging_DT, Bagging_LR, GB, SVM_linear, Bagging_KNN, SVM_rbf, SVM_sigmoid, SVM_poly, Bagging_SVM_{linear/rbf/sigmoid/poly}
+
+### src/models/train.py — new file
+- Trains any model from REGISTRY across walk-forward folds for a given dataset
+- Pipeline order: InfinityToNaNTransformer → SimpleImputer(median) → [RobustScaler] → model
+- Auto-loads best_params from `models/search_results/` if JSON exists
+- Saves fitted Pipeline to `models/trained/{model}_{dataset}_fold{n}.joblib`
+- Upserts results into `reports/tables/model_comparison.csv` (key: dataset+model+fold)
+- CLI: `python src/models/train.py --models LR RF --fold 0`
+
+### src/models/bayesian_search.py — new file
+- Optuna search; search spaces defined per model in model_registry.py (no logic here)
+- Inner CV on folds 1-4 (optimise mean F1-macro), validates result on fold 5
+- Saves `models/search_results/{model}_{dataset}_best_params.json`
+- CLI: `python src/models/bayesian_search.py --models RF --trials 50`
+
+### Training runs completed
+- 12 fast models × 6 folds = 72 Pipeline objects in `models/trained/`
+- `reports/tables/model_comparison.csv`: 72 rows with full metrics
+- Accuracy highlights (default params, dataset_basic_daily):
+  - LR / Bagging_LR: 65–79% (unusually high — to investigate)
+  - HGB / CatBoost / Bagging_DT: 55–65% (reasonable)
+  - RF / KNN / DT / ET: 48–61% (consistent with paper expectation 53–56%)
+
+### Packages installed
+- `optuna 4.9.0`, `catboost`
+
+### map.md — updated
+- Model & Evaluation section rewritten with full commands + registry pattern note
+
+**Stopped at:** /savelog — 12 fast models trained; medium/slow and backtest.py pending
+
+**Next steps:**
+1. Run bayesian search for fast models: `python src/models/bayesian_search.py --models KNN DT ET HGB CatBoost Bagging_DT Bagging_LR --trials 50`
+2. Train medium models (1-5 min/fold): `python src/models/train.py --models GB SVM_linear Bagging_KNN`
+3. Train slow models overnight: `python src/models/train.py --models SVM_rbf SVM_sigmoid SVM_poly Bagging_SVM_linear Bagging_SVM_rbf Bagging_SVM_sigmoid Bagging_SVM_poly`
+4. Write `src/evaluation/backtest.py` — long strategy simulation, equity curve, Sharpe/drawdown per model
+5. Write `src/app/app.py` — Streamlit UI (Goal 4)
+
+---
+
+## 2026-06-30 08:30 — build_dataset.py: Dataset 1 Basic Daily built
+
+**Branch:** branch_lee
+
+**Done:**
+
+### src/features/build_dataset.py — new file
+- Builds `data/processed/dataset_basic_daily.csv` in 12 steps (see docstring)
+- Loads 6 interim panels (gdp/cpi/rate/ca/forex/equity), merges on bdate_range
+- Drops 2014-01-01 (New Year's Day — no forex trading)
+- Forward-fills macro cols (_value, _yoy, _yoy_log, _sqrt, _days_since_update)
+- Drops level CPI cols (I(1) non-stationary) — keeps YoY only
+- Computes equity log returns: `{INDEX}_ret = log(close_t / close_{t-1})`
+- Drops all cols for 5 redundant equity indices (DJI/NASDAQ_COMPOSITE/FTSE250/FTSE350/FTSE_ALL_SHARE)
+- Adds `rate_differential = USA_central_bank_rate_value − UK_central_bank_rate_value`
+- Adds date encodings: day/month/weekday (int) + sin/cos cyclical variants
+- Adds `Direction` target: shift(-1) on GBP_USD_close, drops last row
+
+### Output: data/processed/dataset_basic_daily.csv
+- **Shape: 2868 rows × 110 cols** (2014-01-02 → 2024-12-30)
+- Direction balance: UP=49.1% / DOWN=50.9% — nearly perfectly balanced
+- NaN overall: 0.64% (legitimate initial NaN before first macro releases — handled in train.py)
+- Main NaN: USA_cpi_yoy 10.5%, UK/USA central_bank_rate 7.6%, USA_current_account 4.1%
+
+### map.md — updated
+- Build processed datasets section: replaced CHƯA CÓ with `python src/features/build_dataset.py`
+
+### project_status.py — now shows [OK] for Dataset 1 Basic Daily
+- Overall progress: **77% (40/52 items)**
+
+**Stopped at:** Dataset 1 complete — model scripts not yet started
+
+**Next steps:**
+1. Write `src/evaluation/walk_forward_cv.py` — expanding window, 6 folds (train 2014→N, test year N+1, final test 2024)
+2. Write `src/evaluation/metrics.py` — pure function: accuracy, F1-macro, AUC-ROC, Sharpe proxy, max drawdown
+3. Write `src/models/train.py` — LR + RF first to validate end-to-end pipeline
+4. Write `src/models/bayesian_search.py` — Optuna hyperparameter search
+
+---
+
+## 2026-06-30 00:05 — Goal 3 plan, GOAL3_PLAN.md, detailed checklist in project_status.py
+
+**Branch:** branch_lee
+
+**Done:**
+
+### References/GOAL3_PLAN.md — new file (English)
+- Comprehensive implementation plan for Goal 3 (3A + 3B), written to serve as reference during coding
+- **3A section:** pipeline diagram (6 interim panels → build_dataset.py → 3 CSVs), step-by-step table for build_dataset.py (13 steps: load/merge/ffill/drop-redundant-cols/verify-transforms/add-rate_differential/date-encoding/add-target/save), expected output schema for all 3 datasets
+- **3B section:** walk-forward fold scheme (expanding: train 2014→N, test year N+1, final test 2024), 5-file code plan (walk_forward_cv.py / metrics.py / train.py / bayesian_search.py / backtest.py), scaling strategy (RobustScaler for LR+MLP only), hyperparameter search space per model, expected accuracy 54–57% based on Guyard & Deriaz 2024
+- Includes EDA evidence table (r values) justifying redundant col drops and CPI YoY decision
+- Open decisions section (outlier clipping, RobustScaler leak guard, Dataset 3 feature selection method)
+- Implementation order with dependency graph (3 weeks)
+
+### scripts/project_status.py — DETAILED_CHECKLIST expanded + 2 new auto-check types
+- Backup: `scripts/project_status.py.bak`
+- `DETAILED_CHECKLIST` restructured: 6 stages / 19 items → **7 stages / 35 items**
+  - cl1 (Setup) + cl2 (EDA): unchanged
+  - cl3 **Goal 3A — Build Processed Datasets**: 10 items, 7 auto-check
+    - Auto: build_dataset.py exists, dataset1 ≥2000 rows, Direction col, rate_differential col, weekday col, day_sin col, dataset2/3 path
+    - Manual: redundant cols dropped (confirmed by user), 16 tech indicator families computed
+  - cl4 **Goal 3B — Model & Evaluation Scripts**: 5 items, all auto (path checks for 5 .py files)
+  - cl5 **Goal 3B — Training Results**: 7 items, 3 auto (models/trained/ nonempty, search_results/ nonempty, model_comparison.csv exists)
+  - cl6 **Goal 3B — Evaluation Quality**: 6 items, 1 auto (reports/figures/ nonempty)
+  - cl7 **Goal 4 & Wrap-up**: 4 items, 1 auto (src/app/app.py exists)
+- Added 2 helper functions: `_csv_min_rows(path, min_rows)` and `_dir_nonempty(path)`
+- Added 2 new check types in `run_checklist_auto()`: `csv_minrows` and `dir_nonempty`
+- Verified: `python scripts/project_status.py --no-html` runs clean; overall 75% (39/52); all Goal 3 items correctly show MISSING/uncheck
+
+### map.md — updated
+- Added entry: `References/GOAL3_PLAN.md` under "Xem trạng thái project" section
+
+**Stopped at:** /savelog — all planning work captured; no model code written yet
+
+**Next steps:**
+1. Write `src/features/build_dataset.py` — Dataset 1 Basic Daily (~130 cols); see GOAL3_PLAN.md step table
+   - Load 6 interim panels, merge, ffill, drop redundant equity cols, add rate_differential, date encoding (int + sin/cos), target Direction via shift(-1), drop 2014-01-01, save to `data/processed/dataset_basic_daily.csv`
+2. Write `src/evaluation/walk_forward_cv.py` — expanding window, 6 folds (2014→2018/test2019 … final test 2024)
+3. Write `src/evaluation/metrics.py` — pure function: accuracy, F1-macro, AUC-ROC, Sharpe proxy, max drawdown
+4. Write `src/models/train.py` — LR + RF first to validate end-to-end pipeline
+
+---
+
+## 2026-06-29 23:55 — Q&A: feature selection rationale (EDA findings review)
+
+**Branch:** branch_lee
+
+**Done:**
+
+### Session overview — no files modified, pure analysis Q&A
+- Ran `/about`: read PROJECT_GUIDE.md, map.md, SESSION_LOG.md — reported full project status table and next steps to user.
+- Answered user question: *"Why drop FTSE350/ALL_SHARE/FTSE250/DJI/NASDAQ_COMPOSITE? Why use CPI YoY instead of level?"*
+
+### Explanation synthesised from notebooks 02 & 03 (evidence cited):
+- **Redundant equity drop — multicollinearity:** Notebook 03 Section 6 showed 19 pairs with |r| ≥ 0.85.
+  - UK FTSE cluster: FTSE100↔FTSE_ALL_SHARE r=0.993, FTSE100↔FTSE350 r=0.974 → keep FTSE100, drop the 3 broader indices
+  - US large-cap: SP500↔DJI r=0.954 → keep SP500 (broader coverage), drop DJI
+  - US tech: NASDAQ_COMPOSITE↔NASDAQ100 r=0.992 → keep NASDAQ100 (pure tech signal), drop COMPOSITE
+  - Rationale: collinear cols destabilise LR coefficients; split RF importance across near-identical features → noise
+- **CPI YoY vs level — non-stationarity:** Notebook 01 Section 4 (ADF test)
+  - `USA_cpi_value` and `UK_cpi_value` both fail ADF → I(1) unit root — monotone upward trend 100→130 over 11 years
+  - `USA_cpi_yoy` and `UK_cpi_yoy` pass ADF → stationary, mean-reverting around inflation cycle
+  - Additional: CPI level USA↔UK r=0.982 (near-duplicate after removing trend); YoY breaks this spurious correlation
+  - Rationale: feeding I(1) series into ML risks spurious correlation with target (both trend over time)
+
+**Stopped at:** Q&A complete — no pending code work started
+
+**Next steps:**
+1. Begin **Goal 3** — write `src/features/build_dataset.py` to build Dataset 1 Basic Daily (~130 cols)
+   - Forward-fill macro NaN, drop redundant equity cols (FTSE350/ALL_SHARE/FTSE250/DJI/NASDAQ_COMPOSITE), use CPI YoY not level, add rate_differential = Fed − BoE, drop 2014-01-01
+2. Run notebook 03 to verify RF importance and VIF numbers before finalising feature list
+3. Decide on RobustScaler vs StandardScaler strategy for different feature groups
+
+---
+
 ## 2026-06-29 23:00 — Key Takeaways, EDA HTML report, menu option 8
 
 **Branch:** branch_lee

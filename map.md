@@ -14,6 +14,7 @@
 | Xem tiến độ toàn dự án (visual) | `reports/project_status.html` — tab "Status" (file checks) · tab "Checklist" (methodology tasks) |
 | Xem lịch sử session | `SESSION_LOG.md` (2 entry gần nhất) · `SESSION_LOG_archive.md` (cũ hơn) |
 | Xem spec đầy đủ: column list, data requirements | `References/GBPUSD_ML_data_requirements_spec.md` |
+| Xem kế hoạch Goal 3 chi tiết (3A datasets + 3B models) | `References/GOAL3_PLAN.md` |
 | Xem ERD pipeline | `eurusd_data_pipeline_erd.html` |
 
 ---
@@ -61,24 +62,28 @@
 
 ---
 
-## Build processed datasets (Phase 3 — chưa có)
+## Build processed datasets (Phase 3)
 
 | Muốn làm gì | File/Lệnh |
 |---|---|
-| Dataset 1 — Basic Daily (~130 cols) | **CHƯA CÓ** |
+| Build Dataset 1 — Basic Daily (~110 cols) | `python src/features/build_dataset.py` → `data/processed/dataset_basic_daily.csv` |
 | Dataset 2 — 90-Day Lookback | **CHƯA CÓ** |
 | Dataset 3 — Technical Indicators (~2000 cols) | **CHƯA CÓ** |
 
 ---
 
-## Model & Evaluation (Phase 4-5 — chưa có)
+## Model & Evaluation (Phase 5)
 
 | Muốn làm gì | File/Lệnh |
 |---|---|
-| Train models | `src/models/` (scaffold only) |
-| Evaluation / backtest | `src/evaluation/` (scaffold only) |
-| Xem model đã train | `models/trained/` |
-| Xem kết quả hyperparameter search | `models/search_results/` |
+| **Thêm model mới** | Chỉ sửa `src/models/model_registry.py` — thêm `_build_X` + `_suggest_X` + 1 entry vào REGISTRY |
+| Train models (LR/RF/XGB/LGBM/MLP) | `python src/models/train.py --models LR RF --fold 0` |
+| Bayesian hyperparameter search | `python src/models/bayesian_search.py --models RF --trials 50` |
+| Walk-forward CV splits | `src/evaluation/walk_forward_cv.py` — `get_folds(df)` |
+| Tính metrics (acc/f1/auc/sharpe/drawdown) | `src/evaluation/metrics.py` — `compute_metrics(y_true, y_pred, ...)` |
+| Xem model đã train | `models/trained/*.joblib` |
+| Xem kết quả hyperparameter search | `models/search_results/*_best_params.json` |
+| Xem bảng so sánh models | `reports/tables/model_comparison.csv` |
 
 ---
 
