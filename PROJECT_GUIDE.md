@@ -234,6 +234,66 @@ This project uses **expanding window** because macroeconomic indicators (GDP gro
 
 ---
 
+## Glossary — Key Metrics and Concepts
+
+### CV Accuracy (Cross-Validation Accuracy)
+The average prediction accuracy measured across folds 1–5 of the walk-forward CV scheme.
+Each fold trains on data up to year N and tests on year N+1 (2019 through 2023).
+This metric is used to **compare and select models** — but because the model selection
+process itself has seen these years indirectly, CV accuracy tends to be optimistic.
+Do not use CV accuracy as the final reported result.
+
+### Final 2024 Accuracy
+Accuracy measured on the true held-out test set: the model is trained on 2014–2023 and
+tested on 2024 for the very first time. This data was never used in training, fold selection,
+or hyperparameter tuning. **This is the number to report as the project result.**
+
+### AUC-ROC (Area Under the ROC Curve)
+Measures how well the model separates UP days from DOWN days regardless of the
+classification threshold. An AUC of 0.50 is equivalent to random guessing (coin flip).
+An AUC of 1.00 means perfect separation.
+
+For FX direction prediction, the literature typically reports AUC in the range 0.55–0.65.
+Values above 0.80 are considered suspicious for financial time-series data and should be
+investigated for data leakage or spurious linear correlations before being reported.
+
+Reference thresholds:
+  0.50   Random baseline
+  0.55–0.65  Typical for FX direction prediction (literature)
+  0.70+  Good — uncommon in this domain
+  0.85+  Flagged — requires investigation
+
+### F1-Macro
+The average of F1-score computed separately for the UP class and the DOWN class.
+Balances precision and recall for both directions. More robust than accuracy when one
+class is slightly more frequent. In this project the dataset is near-balanced (49/51),
+so accuracy and F1-macro track closely.
+
+### Sharpe Proxy (Annualised)
+Simulates a simple trading strategy: go long GBP/USD when the model predicts UP, stay
+flat otherwise. The Sharpe proxy is the annualised return of that strategy divided by
+its standard deviation (scaled by sqrt(252) for daily data).
+
+  > 0   Strategy made money on average
+  > 0.3  Decent result for a simple rule-based strategy
+  < 0   Strategy lost money — accurate predictions did not translate to profit
+
+A model can have high accuracy but negative Sharpe (it gets direction right but misses
+the large moves). Sharpe is therefore a more realistic measure of practical usefulness.
+
+### Max Drawdown
+The worst peak-to-trough loss in the strategy's equity curve during the test period.
+Always negative. A drawdown of −0.15 means the strategy lost 15% from its best point
+before recovering. Measures downside risk, not average performance.
+
+### Walk-Forward CV vs Standard Train/Test Split
+Standard splits assign rows randomly to train and test sets. For a time series this
+causes **data leakage**: the model sees future dates during training and past dates
+during testing, inflating apparent performance. Walk-forward CV enforces chronological
+order — the training window always ends before the test window begins.
+
+---
+
 ## Reference Files
 
 | Purpose | File |

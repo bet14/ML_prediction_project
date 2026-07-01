@@ -219,3 +219,7 @@ __marimo__/
 
 # Project-specific secrets
 Key/
+
+# Local-only files (never publish)
+CLEANUP_BEFORE_SHARE.md
+*.bak

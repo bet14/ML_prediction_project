@@ -3,13 +3,13 @@ train.py -- Model training pipeline for GBP/USD direction prediction.
 
 STATUS: production
 
-Trains model types (LR, RF, XGB, LGBM, MLP) across walk-forward folds.
-Saves each fitted Pipeline (imputer + optional scaler + model) as .joblib.
+Trains models across walk-forward folds for a given processed dataset.
+All model definitions live in model_registry.py -- no changes needed here to add models.
 
 Usage:
-    python src/models/train.py                     # Dataset 1, LR + RF, all folds
-    python src/models/train.py --models LR RF XGB  # specific models
-    python src/models/train.py --fold 0            # single fold (0-based)
+    python src/models/train.py                          # Dataset 1, LR + RF, all folds
+    python src/models/train.py --models LR RF XGB       # specific models
+    python src/models/train.py --fold 0                 # single fold (0-based)
 """
 
 import argparse
@@ -21,18 +21,16 @@ import time
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
-from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from src.models.preprocessing import InfinityToNaNTransformer
 from src.evaluation.metrics import compute_metrics
 from src.evaluation.walk_forward_cv import get_folds
+from src.models.model_registry import REGISTRY
+from src.models.preprocessing import InfinityToNaNTransformer
 
 PROCESSED_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed")
 TRAINED_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "models", "trained")
@@ -44,72 +42,23 @@ DATASET_FILES = {
     "dataset_technical": "dataset_technical.csv",
 }
 
-# LR and MLP need feature scaling; tree models do not
-SCALED_MODELS = {"LR", "MLP"}
-
-# Used to compute daily log returns for Sharpe/drawdown metrics
 GBPUSD_CLOSE_COL = "GBP_USD_close"
 
 
-def build_estimator(model_name: str, params: dict) -> object:
-    """Return a bare sklearn-compatible estimator (imputer/scaler added separately)."""
-    if model_name == "LR":
-        return LogisticRegression(
-            C=params.get("C", 1.0),
-            penalty=params.get("penalty", "l2"),
-            solver="saga",
-            max_iter=2000,
-            random_state=42,
-        )
-    if model_name == "RF":
-        return RandomForestClassifier(
-            n_estimators=params.get("n_estimators", 200),
-            max_depth=params.get("max_depth", None),
-            min_samples_leaf=params.get("min_samples_leaf", 1),
-            random_state=42,
-            n_jobs=-1,
-        )
-    if model_name == "XGB":
-        from xgboost import XGBClassifier
-        return XGBClassifier(
-            n_estimators=params.get("n_estimators", 200),
-            learning_rate=params.get("learning_rate", 0.05),
-            max_depth=params.get("max_depth", 4),
-            subsample=params.get("subsample", 0.8),
-            eval_metric="logloss",
-            random_state=42,
-            verbosity=0,
-        )
-    if model_name == "LGBM":
-        from lightgbm import LGBMClassifier
-        return LGBMClassifier(
-            n_estimators=params.get("n_estimators", 200),
-            learning_rate=params.get("learning_rate", 0.05),
-            num_leaves=params.get("num_leaves", 31),
-            random_state=42,
-            n_jobs=-1,
-            verbose=-1,
-        )
-    if model_name == "MLP":
-        return MLPClassifier(
-            hidden_layer_sizes=params.get("hidden_layer_sizes", (64, 32)),
-            learning_rate_init=params.get("learning_rate_init", 0.001),
-            alpha=params.get("alpha", 1e-4),
-            max_iter=500,
-            random_state=42,
-        )
-    raise ValueError(f"Unknown model: {model_name!r}")
-
-
-def build_pipeline(model_name: str, estimator) -> Pipeline:
-    """inf->NaN cleaner + median imputer + optional RobustScaler + estimator."""
+def build_pipeline(model_name: str, params: dict) -> Pipeline:
+    """
+    Build a full sklearn Pipeline for a given model.
+    Steps: inf->NaN cleaner → median imputer → optional RobustScaler → estimator.
+    Scale flag and estimator come from REGISTRY -- no logic here.
+    """
+    entry = REGISTRY[model_name]
     steps = [
         ("replace_inf", InfinityToNaNTransformer()),
         ("imputer", SimpleImputer(strategy="median")),
     ]
-    if model_name in SCALED_MODELS:
+    if entry["scale"]:
         steps.append(("scaler", RobustScaler()))
-    steps.append(("model", estimator))
+    steps.append(("model", entry["build"](params)))
     return Pipeline(steps)
 
 
@@ -127,11 +76,7 @@ def load_best_params(model_name: str, dataset_name: str) -> dict:
 
 
 def _compute_log_returns(X_test: pd.DataFrame):
-    """
-    Daily log returns of GBP/USD aligned to X_test rows.
-    First element is 0.0 (no prior day within the test window).
-    Returns None if the close column is absent.
-    """
+    """Daily log returns of GBP/USD aligned to X_test rows (first element = 0.0)."""
     if GBPUSD_CLOSE_COL not in X_test.columns:
         return None
     close = X_test[GBPUSD_CLOSE_COL].values.astype(float)
@@ -175,9 +120,12 @@ def train_all(
     records = []
 
     for model_name in model_names:
+        if model_name not in REGISTRY:
+            raise ValueError(f"Model {model_name!r} not in REGISTRY. Add it to model_registry.py.")
+
         best_params = load_best_params(model_name, dataset_name)
         if verbose and best_params:
-            print(f"  [{model_name}] using best_params from bayesian search: {best_params}")
+            print(f"  [{model_name}] loaded best_params: {best_params}")
 
         for fi in fold_indices:
             if fi >= len(folds):
@@ -188,7 +136,7 @@ def train_all(
             fold_label = "final" if fi == len(folds) - 1 else str(fi + 1)
 
             t0 = time.time()
-            pipe = build_pipeline(model_name, build_estimator(model_name, best_params))
+            pipe = build_pipeline(model_name, best_params)
             pipe.fit(X_train, y_train)
             elapsed = time.time() - t0
 
@@ -253,18 +201,12 @@ def train_all(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train GBP/USD direction models")
-    parser.add_argument(
-        "--dataset", default="dataset_basic_daily",
-        choices=list(DATASET_FILES.keys()),
-    )
-    parser.add_argument(
-        "--models", nargs="+", default=["LR", "RF"],
-        choices=["LR", "RF", "XGB", "LGBM", "MLP"],
-    )
-    parser.add_argument(
-        "--fold", type=int, default=None,
-        help="Single fold index (0-based). Default: all.",
-    )
+    parser.add_argument("--dataset", default="dataset_basic_daily",
+                        choices=list(DATASET_FILES.keys()))
+    parser.add_argument("--models", nargs="+", default=["LR", "RF"],
+                        choices=list(REGISTRY.keys()))
+    parser.add_argument("--fold", type=int, default=None,
+                        help="Single fold index (0-based). Default: all.")
     args = parser.parse_args()
 
     fold_indices = [args.fold] if args.fold is not None else None
