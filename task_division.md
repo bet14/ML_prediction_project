@@ -10,66 +10,101 @@
 
 ---
 
-## Manim — Goal 1: Data Collection
+## Manim — Goal 1: Data Collection and Harmonization
 
-Slides to own: 3, 4, 5
+Slides to own: 3, 4
 
 Content to prepare:
-  - Explain the three data categories (macro / forex / equity) and their sources
-  - Show the pipeline: fetch scripts -> raw CSVs -> process scripts -> interim panels
-  - Explain forward-filling and no-look-ahead-bias (realtime_start column)
-  - Present the three data challenges and how each was handled
-      UK GDP: FRED series discontinued -> ONS API replacement
-      Composite PMI: no free historical source -> scraper limitation documented
-      Forex: Dukascopy too heavy -> yfinance used instead
+
+  Slide 3 — Data sources:
+    The three data categories (macro / forex / equity) and their API sources.
+
+  Slide 4 — Pipeline:
+    fetch scripts -> data/raw/ -> process scripts -> data/interim/
+    Emphasize: fetch_*.py requires network; process_*.py runs offline.
+
+  Slide 5 — Two features excluded with clear reasons:
+    Composite PMI: not on FRED; investing.com only keeps 3-4 recent releases (no 10-year history);
+    no free alternative source found -> excluded.
+    FX trading volume: Dukascopy gives broker-only volume (not global); 10 years of tick data
+    would take ~5 days to download and aggregate; yfinance has no FX volume -> excluded.
+
+  Slide 6 — Panel harmonization:
+    The realtime_start column: each macro value carries the date it was actually published.
+    build_known_as_of(): for each trading day, look backward and attach the latest value
+    whose realtime_start is on or before that day -> no look-ahead bias.
+    days_since_update column: how stale each reading is -> used as a model feature.
+    Transforms: sqrt on central bank rates, log on UK CPI YoY, CPI level columns dropped (I(1)).
+    Result: 4 daily-indexed interim panel CSVs.
 
 Files to read for preparation:
-  - PROJECT_GUIDE.md (sections: Folder Structure, Running the Main Pipelines)
+  - PROJECT_GUIDE.md (Folder Structure, Running the Main Pipelines)
   - README.md (sections: data/raw/macro, data/raw/forex, data/raw/equity)
-  - reports/macro_data_status.html (open in browser — live data inventory)
-  - reports/forex_data_status.html
-  - reports/equity_data_status.html
+  - src/features/panel_common.py (build_known_as_of function — read the docstring)
+  - src/features/process_cpi.py, process_central_bank_rate.py (transforms applied)
+  - reports/macro_data_status.html (open in browser)
 
 Visuals to include in slides:
-  - Simple flow diagram: API -> fetch_*.py -> data/raw/ -> process_*.py -> data/interim/
-  - Table of macro indicators: name, source, frequency, status (OK / stale / missing)
-  - One chart showing the data gap problem (e.g., UK GDP stopping at 2020)
+  - Flow diagram: API -> fetch_*.py -> data/raw/ -> process_*.py -> data/interim/
+  - Table of macro indicators: name, source, frequency, status
+  - Diagram of build_known_as_of logic (realtime_start vs period date, showing forward fill)
 
-Talking time: approximately 2 minutes 20 seconds
+Talking time: approximately 2 minutes 40 seconds
 
 ---
 
-## Somitha — Goal 2: EDA and Target Definition
+## Somitha — Goal 2: Target Definition and EDA
 
-Slides to own: 6, 7, 8
+Slides to own: 5, 6
 
 Content to prepare:
-  - Clearly define the binary target variable (formula + chart of class balance)
-  - Present key EDA findings from macro indicators: GDP, CPI, central bank rate divergence
-  - Present GBP/USD price history with key events annotated (Brexit, COVID, rate hikes)
-  - Show correlation heatmap or top-N most correlated features with the target
-  - Summarize missing value handling
+
+  Slide 7 — Target variable:
+    Formula: Direction(t) = 1 if close(t+1) > close(t), else 0.
+    Key numbers from notebook 02: UP 1,408 days (49.1%) / DOWN 1,461 days (50.9%), ratio 1.04x.
+    Conclusion: dataset is balanced — no SMOTE or class_weight correction needed.
+    Rolling 1-year UP% chart: oscillates around 50% throughout the decade.
+
+  Slide 8 — EDA findings (three groups):
+    Macro (notebook 01):
+      CPI YoY comparison USA vs UK (highlight 2022 spike to ~10%).
+      Rate differential Fed minus BoE chart: negative 2014-2016, compressed 2017-2021,
+      turns positive 2022-2023 as Fed hiked faster -> added as engineered feature rate_differential.
+      ADF stationarity: GDP and CPI level are I(1); only YoY / first-difference used.
+
+    GBP/USD and forex (notebook 02):
+      Daily return stats: mean -0.008%/day, std 0.57%, skew -0.91, kurtosis 14.4.
+      Worst single day: -7.6% on 2016-06-24 (Brexit referendum).
+      Fat tails -> RobustScaler used in pipeline, not StandardScaler.
+      EUR_GBP kurtosis 109 and GBP_CHF kurtosis 173 -> clip at 5-sigma before training.
+
+    Equity (notebook 02):
+      9 indices started, 5 dropped via multicollinearity analysis:
+        DJI (r=0.95 with SP500), NASDAQ_COMPOSITE (r=0.99 with NASDAQ100),
+        FTSE250/FTSE350/FTSE_ALL_SHARE (r > 0.87 with FTSE100).
+      4 kept: SP500, NASDAQ100, RUSSELL2000, FTSE100.
+      UK FTSE100 positively correlated with GBP/USD returns; US indices weakly negative.
 
 Files to read for preparation:
-  - notebooks/01_eda_macro.ipynb (macro EDA)
-  - notebooks/02_eda_forex_equity.ipynb (forex/equity EDA, target definition)
-  - notebooks/03_feature_analysis.ipynb (feature importance, correlation)
-  - PROJECT_GUIDE.md (section: Specific ML Objective, for the target formula)
-  - reports/eda_summary.html (open in browser — aggregated EDA report)
+  - notebooks/01_eda_macro.ipynb (sections 3, 4, 5, 7)
+  - notebooks/02_eda_forex_equity.ipynb (sections 2, 3, 6, 7, 9, 11)
+  - src/features/build_dataset.py (REDUNDANT_INDICES list and comments — exact correlation values)
+  - PROJECT_GUIDE.md (Specific ML Objective for the target formula)
+  - reports/eda_summary.html (open in browser)
 
 Visuals to include in slides:
-  - Bar chart or pie chart: class balance (% of days Direction=1 vs Direction=0)
-  - Line chart: GBP/USD close price 2014-2024 with Brexit/COVID/2022 rate hike annotated
-  - Correlation heatmap or bar chart of top 10 features
-  - Optional: stationarity test results table (ADF test on key series)
+  - Slide 7: bar chart of class balance + rolling 1-year UP% line chart
+  - Slide 8: rate differential fill chart (from notebook 01 cell for cbr),
+             GBP/USD daily returns bar chart with Brexit annotated,
+             equity normalised price chart (US vs UK divergence 2014-2024)
 
-Talking time: approximately 2 minutes 20 seconds
+Talking time: approximately 1 minute 40 seconds
 
 ---
 
 ## Lee — Introduction + Goal 3: Model + Goal 4: Streamlit + Conclusion
 
-Slides to own: 1, 2, 9, 10, 11, 12
+Slides to own: 1, 2, 7, 8, 9, 10 (slide 11 references is displayed, no speaker notes)
 
 Content to prepare:
   Intro (slides 1-2):
