@@ -271,8 +271,76 @@ Speaker notes (Lee):
   trustworthy than ones that spike in one year and drop in another.
   The third chart answers the practical question: if you actually traded on these
   predictions, did you make money? High accuracy alone does not guarantee profit.
-  All of this is packaged into a Streamlit interface: input market data for a given day
-  and get a next-day direction prediction with a confidence score."
+  This app doesn't train anything live — all 12 models × 6 folds were already trained
+  and saved to disk by train.py. The app just lets you pick one and instantly see how
+  it performed: accuracy/F1/AUC/Sharpe for that fold, a chart of its day-by-day predicted
+  vs actual direction, and — for tree-based models — which features it relied on most."
+
+Presentation talking points (extra material, use as needed):
+  - Architecture point: **train once, demo many times** — decouples the expensive
+    training step from the interactive demo, which is why the UI is instant.
+  - Pick one interesting fold to show live (e.g. LR, fold 2 or 4 — see
+    model_comparison.csv, these had the highest AUC) and narrate what "predicted vs
+    actual" means: every point where the two lines diverge is a wrong-direction day.
+  - Point out the Sharpe proxy vs accuracy trade-off — a model can look accurate but
+    still lose money (negative Sharpe); this is why both numbers are shown side by side.
+  - If asked "why so many models" — mention the Bagging_DT vs RF distinction (row
+    resampling only vs row+feature resampling) as a concrete example of the kind of
+    comparison this app was built to make easy.
+
+Bayesian search — how ours differs from the original paper (extra material, trim as needed):
+  Guyard & Deriaz (2024) also used Bayesian hyperparameter optimization (confirmed in
+  References/eurusd-forex-prediction.html, section "Bayesian Hyperparameter Optimization")
+  — so this is not a technique Claude invented on its own; it follows the paper's method.
+  However, the original is more elaborate than our version:
+
+    Paper (EUR/USD):
+      - THREE sequential Bayesian searches, each stage initialised from the previous
+        stage's result:
+          Search 1: tune hyperparameters on the full feature set
+          Search 2: tune hyperparameters + coarse feature selection (drop weak features)
+          Search 3: tune hyperparameters + fine feature selection -> final model
+      - Rationale given in the paper: cascading stages converge faster because each
+        stage starts from a good point instead of exploring the full space cold each time.
+      - Optimization criterion: accuracy (the paper notes this only imperfectly
+        correlates with actual trading profit).
+
+    Ours (GBP/USD):
+      - ONE single-stage Bayesian search per model (no feature selection stage —
+        all 110 columns of dataset_basic_daily.csv are used as-is).
+      - Optimization criterion: F1-macro instead of accuracy (chosen because it
+        balances both classes; matters less here since classes are already
+        near-balanced 49/51, but is the more defensible default).
+      - Simplification is intentional: our scope is comparing 22 models broadly
+        rather than deeply optimizing one model's feature subset — a 3-stage
+        cascading search per model would multiply runtime substantially for
+        limited marginal benefit at this project's scope.
+
+    Say explicitly in the talk: "we used the same Bayesian optimization technique as
+    the original paper, but simplified to a single stage without automatic feature
+    selection, since our goal was breadth across models rather than depth on one model."
+    Don't let the audience assume we replicated the paper's tuning pipeline exactly.
+
+  Why Bayesian search instead of Grid Search or Random Search:
+    - Grid Search: tries every combination on a fixed grid. Cost explodes
+      combinatorially with the number of hyperparameters (e.g. 5 values x 5 values x
+      5 values = 125 combinations per model, all evaluated even in obviously bad
+      regions of the space). Wasteful, and grid resolution has to be guessed in advance.
+    - Random Search: samples combinations uniformly at random. Better than grid at
+      covering high-dimensional spaces with a fixed budget, but has no memory — trial 50
+      is chosen exactly as blindly as trial 1, even if trials 1-49 already showed which
+      regions are hopeless.
+    - Bayesian search (Optuna, what we use): builds a probabilistic model of
+      "hyperparameters -> score" from every trial run so far, then samples the next
+      candidate from regions predicted to score well (with some exploration to avoid
+      getting stuck). In practice this means good hyperparameters are found in far
+      fewer trials than grid or random search would need for the same result quality —
+      relevant here because each trial means fitting the model on 4 folds, and some
+      models (Bagging_LR, MLP) already take minutes per single fit.
+    - This is also why the paper's own justification for cascading 3 searches
+      ("accelerates convergence... starting points matter enormously") is the same
+      underlying argument: Bayesian methods are only worth using because they exploit
+      information from prior trials, and a good starting point compounds that benefit.
 
 ---
 
