@@ -4,6 +4,91 @@
 > Read this file when looking up history; no need to read regularly.
 
 ---
+
+## 2026-07-01 (2) — Cleanup checklist + gitignore update
+
+**Branch:** branch_lee
+
+**Done:**
+
+### CLEANUP_BEFORE_SHARE.md — new file (local only, gitignore'd)
+- 7-step checklist to run before making repo public / sharing with employers
+- Step 1: delete personal workflow files (CLAUDE.md, SESSION_LOG, map.md, task_division.md)
+- Step 2: delete personal automation (push.bat, auto_push.py)
+- Step 3: delete *.bak files
+- Step 4: decide what to do with models/trained/ (72 joblib, potentially large)
+- Step 5: list of what to keep visible (src/, notebooks/, reports/, presentation_outline.md...)
+- Step 6: README.md update checklist (best result 63.2%, reproduce steps, API keys note)
+- Step 7: git hygiene (check commit history, no API keys)
+
+### .gitignore — updated
+- Added `CLEANUP_BEFORE_SHARE.md` (never push)
+- Added `*.bak` (never push backup files created by Claude Code)
+
+**Stopped at:** cleanup file created; no code changes this sub-session.
+
+**Next steps:** (same as before)
+1. Write src/app/app.py — Streamlit UI (Goal 4)
+2. Run Bayesian search for fast models if time allows
+3. Build actual slides in Google Slides / PowerPoint by July 3
+
+---
+
+## 2026-07-01 — Presentation outline finalized + task division locked
+
+**Branch:** branch_lee
+
+**Done:**
+
+### presentation_outline.md — rewritten (full 10-slide script)
+- Slide 1: Title + Project Overview (Lee, ~75 sec)
+- Slide 2: Data Sources & Pipeline (Manim, ~70 sec)
+- Slide 3: Limitations & Panel Harmonization (Manim, ~70 sec)
+- Slide 4: Target Variable Definition (Somitha, ~40 sec)
+- Slide 5: EDA — Macro, Forex, Equity (Somitha, ~60 sec)
+- Slide 6: Feature Engineering & Build Dataset (Somitha, ~55 sec)
+- Slide 7: Walk-Forward CV (Lee, ~60 sec)
+- Slide 8: Models + Results + Streamlit with 3 charts (Lee, ~90 sec)
+- Slide 9: Conclusion (Lee, ~30 sec)
+- Slide 10: References & AI Disclosure (display only)
+- Full speaker notes written for every slide in first-person English
+- Time budget: 10 min exactly including buffer
+
+### task_division.md — fully updated
+- Manim: slides 2-3 only (was 2-3-4 in previous draft)
+- Somitha: slides 4-5-6 (Target → EDA → Feature Engineering — logical order)
+- Lee: slides 1, 7-9
+- Files to read + visuals listed per person
+- Time summary table updated
+
+### scripts/plot_model_comparison.py — new file (created earlier this session)
+- Generates 4 PNG charts from reports/tables/model_comparison.csv:
+  1. cv_vs_final_accuracy.png — CV vs Final 2024 per model, yellow = flagged LR anomaly
+  2. auc_by_model.png — AUC-ROC per model with literature reference lines
+  3. accuracy_per_fold.png — accuracy per test year 2019-2023 (consistency check)
+  4. sharpe_by_model.png — financial usefulness (Sharpe proxy, green/red bars)
+- All 4 charts saved to reports/figures/
+
+### PROJECT_GUIDE.md — Glossary section added
+- CV Accuracy, Final 2024 Accuracy, AUC-ROC (with thresholds), F1-Macro,
+  Sharpe Proxy, Max Drawdown, Walk-Forward CV vs Standard Split — all defined in English
+
+### src/models/train.py — --skip-existing flag added
+- `train_all(skip_existing=True)` checks if joblib file exists before training that fold
+- CLI: `python src/models/train.py --models RF XGB --skip-existing`
+- Enables resuming interrupted training runs without re-training completed folds
+- Backup: train.py.bak
+
+**Stopped at:** Presentation outline + task division complete. Slides not yet built in any tool (Google Slides / PowerPoint).
+
+**Next steps:**
+1. Build actual slides in Google Slides or PowerPoint — one deck, one file per person by July 3
+2. Run Bayesian search for fast models if not yet done: `python src/models/bayesian_search.py --models KNN DT ET HGB CatBoost Bagging_DT Bagging_LR --trials 50`
+3. Write `src/app/app.py` — Streamlit UI (Goal 4), needed for screenshot in slide 8
+4. Rehearsal July 5-6: time each section, cut detail if any section runs over
+
+---
+
 ## 2026-06-30 10:30 — Goal 3B: full model pipeline + 12 fast models trained
 
 **Branch:** branch_lee
