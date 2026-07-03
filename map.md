@@ -14,6 +14,7 @@
 | See overall project progress (visual) | `reports/project_status.html` — "Status" tab (file checks) · "Checklist" tab (methodology tasks) |
 | See session history | `SESSION_LOG.md` (2 most recent entries) · `SESSION_LOG_archive.md` (older) |
 | See full spec: column list, data requirements | `References/GBPUSD_ML_data_requirements_spec.md` |
+| Fast technical orientation for AI agents (architecture, flow, conventions, decisions, current gaps) | `agent.md` |
 | See detailed Goal 3 plan (3A datasets + 3B models) | `References/GOAL3_PLAN.md` |
 | See pipeline ERD | `eurusd_data_pipeline_erd.html` |
 

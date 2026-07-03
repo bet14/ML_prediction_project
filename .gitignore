@@ -223,3 +223,6 @@ Key/
 # Local-only files (never publish)
 CLEANUP_BEFORE_SHARE.md
 *.bak
+
+# CatBoost training artifacts (regenerated on every run, not meant to be versioned)
+catboost_info/
