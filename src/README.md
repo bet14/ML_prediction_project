@@ -4,6 +4,15 @@ Modular, importable code (not notebooks). Not scanned by `auto_push.py`.
 
 ## `data/` — data collection (network-dependent; run outside Cowork)
 
+**Purpose:** pull raw, unmodified data from external sources (FRED/ALFRED, ONS, yfinance) and save one CSV per indicator/pair/index under `data/raw/`. Nothing in this directory transforms or merges data — that happens in `features/`.
+
+**Workflow (personal machine, needs network):**
+1. Macro (FRED): run `python run_fred_pipeline.py --start 2014-01-01 --end 2024-12-31` from project root — this calls the verified `fetch_*.py` scripts below in sequence. Use `--verify-only` first to sanity-check series IDs without downloading, `--skip-fetch` to re-run downstream processing without hitting the network.
+2. Forex: run `run_forex_wip.bat --pair GBPUSD --source yfinance` (repeat per pair, or loop over all 13) — wraps `fetch_forex_wip.py` / `fetch_forex_chunked.py` (chunked/resumable variant, use if a single run keeps failing).
+3. Equity: run `run_equity_wip.bat --index FTAS --append` (repeat per index) — wraps `fetch_equity_wip.py`.
+4. UK-specific gaps (GDP, CPI, current account): run the WIP ONS scripts manually, review the output CSV, then decide whether to overwrite the FRED-derived file (see caveats below).
+5. Copy resulting CSVs from `data/raw/` into the repo and `push.bat` so Cowork/other machines can pick them up.
+
 Shared helpers:
 - `fred_common.py` — shared fredapi logic (`load_fred`, `fetch_indicator_releases` with chunked ALFRED requests, `save_raw_csv`, `verify_series_id`) used by every per-indicator `fetch_*.py` below. Fetches full revision history (every observation × release-date pair), not just latest values — this is what lets the `process_*.py` step forward-fill by *release date* instead of *observation date* and avoid look-ahead bias.
 - `pipeline_log_common.py` — shared `StepLogger` (timestamped console output) + `append_run_log()`/`run_script()`, writing one shared `reports/pipeline_run_log.jsonl` (one JSON line per script invocation, tagged `pipeline: macro|forex|equity`) so all domains share one log file instead of fragmenting.
@@ -25,6 +34,15 @@ WIP / manual / unverified scripts (not wired into `run_fred_pipeline.py`, run ma
 
 ## `features/` — feature engineering (pure pandas, runs in Cowork)
 
+**Purpose:** turn the raw per-indicator/pair/index CSVs from `data/raw/` into clean, business-day-aligned panels (`data/interim/`), then merge those panels into the final ML-ready datasets (`data/processed/`). No network calls — safe to run entirely in Cowork.
+
+**Workflow (run in this order):**
+1. Macro panels: run each `process_gdp.py`, `process_cpi.py`, `process_central_bank_rate.py`, `process_current_account.py`, `process_composite_pmi.py` — each reads its own `data/raw/macro/*.csv` and writes one `data/interim/{indicator}_panel.csv`, forward-filled by `realtime_start` (no look-ahead bias) via shared logic in `panel_common.py`.
+2. Market panels: run `process_forex.py` and `process_equity.py` — read `data/raw/forex/` and `data/raw/equity/`, reindex to the business-day calendar, write `data/interim/forex_panel.csv` and `data/interim/equity_panel.csv`.
+3. Dataset 1: run `python src/features/build_dataset.py` — merges all 6 interim panels, adds derived columns (`rate_differential`, date encodings, `Direction` target), writes `data/processed/dataset_basic_daily.csv`. This is the only dataset currently built.
+4. Dataset 2 (optional, not yet run): `build_dataset_90day.py` — loads Dataset 1, adds 90 lagged copies of every eligible column, writes `data/processed/dataset_90day_lookback.csv`.
+5. Dataset 3 (optional, not yet run): `build_dataset_technical.py` — loads Dataset 1 + interim forex/equity panels, computes technical indicators via `technical_indicators.py`, writes `data/processed/dataset_technical.csv`.
+
 Macro panel builders (no-look-ahead-bias forward-fill using `realtime_start`, not the observation date — logic shared via `panel_common.py`):
 - `panel_common.py` — shared helpers: `load_raw_csv`, `business_calendar`, `build_known_as_of` (the core forward-fill), `save_panel`. Also strips timezone info from ONS timestamps so `merge_asof` works.
 - `process_gdp.py`, `process_current_account.py` — forward-fill only, no transform. UK current-account column stays absent until `UK_current_account.csv` exists (auto-picks it up once present).
@@ -45,12 +63,28 @@ Dataset builders (top-level entry points, run in this order):
 
 ## `models/` — model zoo, training, hyperparameter search
 
+**Purpose:** define every candidate model in one place, tune their hyperparameters, and train/save fitted pipelines per walk-forward fold for later evaluation.
+
+**Workflow:**
+1. (Optional but recommended) tune hyperparameters first: `python src/models/bayesian_search.py --models RF --trials 50` — writes `models/search_results/{model}_{dataset}_best_params.json`.
+2. Train: `python src/models/train.py --models LR RF XGB --fold 0` for a single fold while iterating, or omit `--fold` to train all 6 folds. `train.py` auto-loads any matching best-params JSON from step 1. Add `--skip-existing` to resume an interrupted run.
+3. Output: one `.joblib` pipeline per model×fold in `models/trained/`, plus one upserted row per fold in `reports/tables/model_comparison.csv` — feeds directly into `evaluation/backtest.py` and `app/app.py`.
+4. To add a new model: edit only `model_registry.py` (one `_build_X`/`_suggest_X` pair + one `REGISTRY` entry) — `train.py` and `bayesian_search.py` never need to change.
+
 - `preprocessing.py` — `InfinityToNaNTransformer`, a sklearn-compatible transformer converting `+inf`/`-inf` to `NaN` (e.g. `UK_cpi_yoy_log` can be `-inf` during deflation) so `SimpleImputer` can fill them. Kept in its own module, separate from `train.py`, so joblib-pickled `Pipeline` objects can be unpickled from any script — joblib pickles reference a class's module path, and `__main__`-defined classes break when loaded elsewhere.
 - `model_registry.py` — single source of truth for all ~21 models (LR, RF, XGB, LGBM, MLP, KNN, DT, ET, HGB, CatBoost, GB, SVM_linear/rbf/sigmoid/poly, Bagging_DT/LR/KNN/SVM_linear/rbf/sigmoid/poly). Each model contributes one `_build_X(params)` (bare unfitted estimator, `random_state=42`) and one `_suggest_X(trial)` (Optuna search space) function, registered in `REGISTRY` with a `scale` flag (adds `RobustScaler` for distance/gradient-sensitive models) and a `speed` tag (`F`/`M`/`S`, exposed as `FAST_MODELS`/`MEDIUM_MODELS`/`SLOW_MODELS` — SVM_rbf/sigmoid/poly and Bagging_SVM_* flagged "do not run at Cowork"). `train.py` and `bayesian_search.py` never change when adding a model — only this file does. XGB/LGBM/CatBoost use lazy imports so the registry still loads without those libs installed.
 - `train.py` — trains models across walk-forward CV folds. CLI: `--dataset` (`dataset_basic_daily` default / `dataset_90day_lookback` / `dataset_technical`), `--models` (REGISTRY keys), `--fold` (single 0-based index, default = all folds), `--skip-existing` (resume mode). `build_pipeline()` assembles `InfinityToNaNTransformer → SimpleImputer(median) → [RobustScaler if scale=True] → model`; auto-loads best hyperparameters from `models/search_results/{model}_{dataset}_best_params.json` if present. Gets folds from `walk_forward_cv.get_folds()`; the last fold is labeled `"final"` (held-out 2024). Saves each fitted pipeline to `models/trained/{model}_{dataset}_fold{label}.joblib` and upserts a row into `reports/tables/model_comparison.csv` after every fold, so an interrupted run keeps completed results.
 - `bayesian_search.py` — 3-stage Optuna hyperparameter search per model per dataset: (1) inner CV over fold indices `[0,1,2,3]`, maximizing mean F1-macro; (2) `study.best_params` found via `optimize(n_trials=...)`; (3) validated on held-out fold index `4`. CLI: `--dataset`, `--models` (default `["RF"]`), `--trials` (default 50). Writes `models/search_results/{model}_{dataset}_best_params.json`, which `train.py` then auto-loads.
 
 ## `evaluation/` — walk-forward CV, metrics, backtesting
+
+**Purpose:** define the train/test split used everywhere else (`walk_forward_cv.py`), score predictions (`metrics.py`), and translate model predictions into a realistic trading equity curve (`backtest.py`).
+
+**Workflow:**
+1. `walk_forward_cv.py` is imported by `train.py`, `bayesian_search.py`, and `app.py` — it is not run standalone (though `describe_folds()` is handy for a quick sanity check of date ranges/row counts per fold).
+2. `metrics.py` is called internally by `train.py` (per-fold scoring) and `backtest.py` (strategy scoring) — not run standalone either.
+3. After models are trained (see `models/` workflow above), run `python src/evaluation/backtest.py --dataset dataset_basic_daily --models XGB HGB --spread-pips 0` — loads the already-trained `.joblib` pipelines (no retraining), stitches out-of-sample predictions across folds 1–5 + final into one 2019–2024 curve, and compares against GBP/USD buy-and-hold. Re-run with `--spread-pips 1`/`2` for cost-sensitivity checks.
+4. Output: per-day CSVs in `reports/tables/` and an equity+drawdown PNG in `reports/figures/` — both consumed by `app/app.py`.
 
 - `walk_forward_cv.py` — `get_folds(df, target_col="Direction", first_test_year=2019, n_test_years=1)` builds 6 expanding-window folds: train 2014–2018/test 2019, train 2014–2019/test 2020, … train 2014–2022/test 2023, plus a final train 2014–2023/test 2024 (true held-out set). Self-terminates based on the last year actually present in the data. `describe_folds()` prints date ranges/row counts per fold.
 - `metrics.py` — `compute_metrics(y_true, y_pred, y_proba=None, returns=None)` computes accuracy and F1-macro always; AUC-ROC only if `y_proba` is passed; Sharpe proxy (`_annualised_sharpe`) and max drawdown (`_max_drawdown`, peak-to-trough on cumulative log returns) only if `returns` is passed (long-when-predicted-up, else flat strategy).
