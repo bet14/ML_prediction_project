@@ -1249,36 +1249,6 @@ slides.push(`
   </div>
   <p style="font-size:.8rem; color:var(--muted); margin-top:8px;">Only LR and HGB carry an explicit, classic L1/L2 penalty term; the tree ensembles (RF/ET/DT/Bagging_DT/XGB/LGBM/CatBoost) regularize structurally via depth/leaf/sampling limits instead, and MLP uses L2 weight decay (<code>alpha</code>).</p>
 </div>
-<div class="box" style="margin-bottom:16px;">
-  <h3>Curves used to evaluate fit — no classic train/val learning curve (invalid for time series); walk-forward comparison used instead</h3>
-  <table>
-    <tr><th>Chart</th><th>What it shows</th><th>Reads as</th></tr>
-    <tr><td>CV vs Final accuracy (bar)</td><td>Mean accuracy over inner folds 1-5 vs. the true 2024 held-out year</td><td>Gap between the two = overfitting / variance signal</td></tr>
-    <tr><td>Accuracy per fold (line)</td><td>Accuracy trend across test years 2019-2023, one line per model</td><td>Spread across years = stability across market regimes</td></tr>
-    <tr><td>AUC-ROC by model (bar)</td><td>Mean AUC across folds 1-5</td><td>Ranking ability beyond the 0.5 baseline</td></tr>
-    <tr><td>Sharpe proxy by model (bar)</td><td>Mean simulated trading Sharpe across folds 1-5</td><td>Whether accuracy translates into simulated profit</td></tr>
-  </table>
-</div>
-<div class="box">
-  <h3>Bias-variance tradeoff — read from the real fold numbers</h3>
-  <div class="pipe-detail-grid" style="grid-template-columns:repeat(3,1fr);">
-    <div class="pipe-card">
-      <div class="pc-title">High variance (overfit)</div>
-      <div class="pc-role">LR &middot; Bagging_LR</div>
-      <div>Both hit ~73.7% mean CV accuracy — the two highest of all 12 models — but final 2024 accuracy drops to 65.5% / 67.4% (−8.2pp / −6.3pp). Best inner-search F1 score, worst generalization. Part of this gap is mechanical, not just these two overfitting in isolation: folds 1-4 were also what the Bayesian search optimized against, so every model's CV mean is inherently a little optimistic. Bagging_LR's search also landed on <code>C=5.50</code> — very weak L2 regularization — which independently explains why it fits training noise so easily.</div>
-    </div>
-    <div class="pipe-card">
-      <div class="pc-title">Low variance (well-generalized)</div>
-      <div class="pc-role">XGB &middot; CatBoost</div>
-      <div>Lowest fold-to-fold swings (σ≈0.03, from the accuracy-per-fold chart). XGB's CV→Final gap is only +1.0pp; CatBoost's final (63.2%) is actually higher than its CV mean (58.7%) — no overfitting signal at all.</div>
-    </div>
-    <div class="pipe-card">
-      <div class="pc-title">High bias (underfit)</div>
-      <div class="pc-role">DT</div>
-      <div>Optuna itself capped max_depth at 3 — too shallow to separate the classes. 47.5% final accuracy, below the 50% coin-flip baseline.</div>
-    </div>
-  </div>
-</div>
 <div class="extra-toggle" onclick="this.nextElementSibling.classList.toggle('open')">▸ Extra material: our Bayesian search (click to expand)</div>
 <div class="extra-content">
   <div class="box">
@@ -1299,17 +1269,6 @@ slides.push(`
 
 slides.push(`
 <h2>Models &amp; Results</h2>
-<div class="box" style="margin-bottom:14px;">
-  <h3>Metrics we&rsquo;ll cite from here on</h3>
-  <table>
-    <tr><th>Metric</th><th>What it means</th><th>Reference range</th></tr>
-    <tr><td><b>Accuracy</b></td><td>% of days the direction call was correct</td><td>50% = coin flip</td></tr>
-    <tr><td><b>F1-macro</b></td><td>Accuracy balanced across the UP and DOWN classes</td><td>What the Bayesian search optimizes</td></tr>
-    <tr><td><b>AUC-ROC</b></td><td>Ranking quality regardless of classification threshold</td><td>0.55&ndash;0.65 = typical for FX direction (literature) &middot; <span class="num-bad">0.80+ = flagged, investigate for leakage</span></td></tr>
-    <tr><td><b>Sharpe proxy</b></td><td>Annualised return/risk of &ldquo;go long when the model says UP&rdquo;</td><td><span class="num-good">&gt;0.3 = decent</span> &middot; <span class="num-bad">&lt;0 = loses money even if accuracy looks fine</span></td></tr>
-    <tr><td><b>Max drawdown</b></td><td>Worst peak-to-trough loss of that simulated strategy</td><td>Always &le; 0</td></tr>
-  </table>
-</div>
 <div class="box" style="margin-bottom:14px;">
   <h3>Model status</h3>
   <table>
