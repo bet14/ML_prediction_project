@@ -93,6 +93,7 @@
 | Generate bias-variance trade-off scatter (one per dataset; x=fold-to-fold accuracy std-dev, y=final accuracy; only 3-4 extreme models labeled) — draft support for Slide 8b | `python scripts/plot_variance_tradeoff.py --open` → `reports/figures/variance_tradeoff_dataset{1,2,3}_*.png` |
 | View Dataset 1 vs 2 vs 3 comparison report (key findings + charts + per-model tables) | `python scripts/generate_dataset_comparison_report.py --open` → `reports/dataset_comparison.html` |
 | Walk-forward backtest — stitch OOS fold predictions into one 2019-2024 equity curve, long/flat strategy vs buy-and-hold, spread-cost sensitivity | `python src/evaluation/backtest.py --dataset dataset_basic_daily --models XGB HGB --spread-pips 1.5 --open` → `reports/figures/equity_curve_<model>_<dataset>.png` + `reports/tables/backtest_<model>_<dataset>.csv` + `reports/tables/backtest_summary.csv` |
+| View final course presentation (slide deck, single HTML file) | `reports/final_presentation.html` — open in browser (working copy: `reports/draft_final_presentation.html`) |
 
 ---
 
@@ -101,7 +102,9 @@
 | What you want to do | File/Command |
 |---|---|
 | Run the GBP/USD prediction interface | `streamlit run src/app/app.py` (requires `streamlit` installed — run on personal machine) |
+| One-click launch (no typing) | `auto_open_streamlit.bat` (project root) |
 | What the app does | Select model + fold → view metrics, predicted vs actual, feature importance, model comparison table, 4 charts from `reports/figures/` |
+| Code walkthrough + Streamlit usage guide | `src/README.md` — `app/` section |
 
 ---
 

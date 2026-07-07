@@ -234,19 +234,21 @@ Course: Statistical Analysis & Machine Learning — DSA Spring 2026
 >   is a config change to train.py, not new engineering)
 
 **Speaker notes (Linh):
-  "Before the models themselves, two pieces of scaffolding. Because GBP/USD is a
-  time series, we never use a random train/test split — that leaks future data into
-  training. Instead we use expanding-window walk-forward cross-validation: the
-  training window grows by one year at a time, always testing on the year right
-  after, and 2024 is a true held-out year, never touched until final evaluation.
-  Second, every model here is really the same 4-step pipeline with a different
-  estimator dropped in at the end: clean infinite values, impute missing data using
-  only the training fold's median, optionally rescale, then fit — refit six times,
-  once per fold, so there's no leakage. With that scaffolding, we trained and
-  fine-tuned 12 estimators across four families: two linear models, four tree-based
-  models, four gradient boosting variants, and two others — k-nearest-neighbors and
-  a small neural net. Eight more are already defined in the registry but were
-  deprioritized purely on time."**
+  "Two things before the models themselves. First: GBP/USD is a time series, so we
+  never use a random train/test split — that would leak future data into training.
+  Instead, we use walk-forward cross-validation. The training window grows by one
+  year each time. We always test on the year right after. And 2024 is held out
+  completely — never touched until the final check.
+
+  Second: every model uses the same 4-step pipeline. Clean infinite values. Fill
+  missing data using only the training fold's median. Rescale, if the model needs
+  it. Then fit. We repeat this six times, once per fold, so nothing leaks between
+  folds.
+
+  With that in place, we trained and tuned 12 models across four families: two
+  linear models, four tree-based models, four gradient boosting models, and two
+  others — KNN and a small neural net. Eight more models are already coded in our
+  registry, just not trained yet — purely a time trade-off."**
 
 ---
 
@@ -278,17 +280,19 @@ Course: Statistical Analysis & Machine Learning — DSA Spring 2026
 >   all 12 models yet the worst final Sharpe/Profit.
 
 **Speaker notes (Linh):
-  "Every model went through the same tuning workflow: a 50-trial Bayesian search on
-  the first four folds, validated on a fifth inner fold, then the winning
-  hyperparameters are refit independently six times — once per walk-forward fold —
-  never re-searched. A couple of these are worth flagging now because they explain
-  the next slide's results: Bagging_LR's search landed on C=5.50, very weak
-  regularization, and the Decision Tree got capped at depth 3 by the search itself.
-  Also worth noting: the inner-search score that picks these hyperparameters doesn't
-  reliably predict which model generalizes best — Bagging_LR had the best inner
-  score of all twelve models and, as you'll see, one of the worst real results —
-  which is exactly why we don't stop at this slide and walk-forward validate on
-  genuinely held-out years next."**
+  "Every model goes through the same tuning steps. First, a Bayesian search — 50
+  trials — tunes hyperparameters on folds 1 through 4, then checks them on fold 5.
+  Once we pick the best settings, we freeze them. Then we refit the model six
+  times, once per fold — we never search again.
+
+  Two results are worth flagging now, because they explain the next slide. Bagging
+  LR's search landed on very weak regularization, C equals 5.50. And the Decision
+  Tree got capped at depth 3.
+
+  One more important point: the tuning score does not reliably predict how well a
+  model generalizes. Bagging_LR had the best tuning score of all 12 models — but,
+  as you'll see, one of the worst real results. That's exactly why we don't stop
+  here, and validate on genuinely held-out years next."**
 
 ---
 
@@ -356,26 +360,30 @@ Course: Statistical Analysis & Machine Learning — DSA Spring 2026
 >       (feature selection/PCA) · train remaining registry models
 
 **Speaker notes (Linh):
-  "We evaluate on two numbers: accuracy, and Profit — the exact compounding
-  long/short formula from the reference paper, asking whether trading on the
-  prediction would have actually made money over 2024. Everything here is the true
-  2024 held-out fold — never touched during tuning. Two things jump out from the
-  results table. First, on Dataset 1, Bagging_LR wins on accuracy but is one of the
-  worst on Profit, while XGB and HGB are mid-table on accuracy but top Profit.
-  Second, Dataset 3's technical indicators push every tree and boosting model to
-  70-83% accuracy, but ten of those twelve models still have negative Profit — more
-  accurate did not mean more profitable. The three bias-variance scatter plots make
-  this visual: on Dataset 1, CatBoost trades a few accuracy points for much better
-  stability than the accuracy leader; Dataset 2's whole cloud stays near the
-  coin-flip line no matter how stable a model is, because the signal simply isn't
-  there; Dataset 3 shows nearly every tree and boosting model landing in the ideal
-  corner together, except DT, which is both the least stable model in the project
-  and the only one that doesn't beat a coin flip. Zooming out across all three
-  datasets: Dataset 2 is a documented negative result, Dataset 3 is a strong
-  accuracy win that surprisingly doesn't translate into better risk-adjusted
-  returns. So which model is 'best' really depends on the lens — Bagging_LR on raw
-  accuracy, but XGB and HGB are our practical recommendation because they're the
-  only two where accuracy and Sharpe agree."**
+  "We check two numbers: accuracy, and Profit. Profit uses the same long/short
+  formula as the reference paper. It asks a simple question: if you traded on this
+  prediction, would you actually make money in 2024? Everything here is the true
+  2024 test year — never touched during tuning.
+
+  Two things stand out. First, on Dataset 1, Bagging_LR wins on accuracy, but it's
+  one of the worst models on Profit. Meanwhile XGB and HGB are mid-table on
+  accuracy, but top the Profit ranking. Second, on Dataset 3, almost every tree and
+  boosting model reaches 70 to 83% accuracy. But 10 of those 12 models still lose
+  money. So higher accuracy did not mean higher profit.
+
+  The three bias-variance charts show this visually. On Dataset 1, CatBoost gives
+  up a little accuracy for much better stability than the accuracy leader. On
+  Dataset 2, every model sits near the coin-flip line, no matter how stable it is
+  — the signal just isn't there. On Dataset 3, almost every tree and boosting
+  model lands in the best corner, high accuracy and low variance, except the
+  Decision Tree, which is both the least stable model and the only one below a
+  coin flip.
+
+  Zooming out: Dataset 2 is a clear negative result. Dataset 3 wins on accuracy,
+  but that win doesn't carry over to risk-adjusted returns. So which model is
+  'best' depends on what you're measuring. Bagging_LR wins on raw accuracy. But we
+  recommend XGB and HGB, because they're the only two models where accuracy and
+  Sharpe ratio agree."**
 
 ---
 
@@ -393,12 +401,12 @@ Course: Statistical Analysis & Machine Learning — DSA Spring 2026
 >   full reports/dataset_comparison.html narrative
 
 **Speaker notes (Linh):
-  "The Streamlit app lets a user pick a dataset, pick one of the 12 trained models,
-  and get an instant up/down prediction with a confidence score — everything is
-  pre-trained and loaded from disk, so there's no retraining happening live. This
-  session we added the dataset selector, so it now works across all 3 datasets, and
-  verified in a real browser that switching dataset actually reloads the right
-  models rather than showing stale results."**
+  "The Streamlit app lets a user pick a dataset, pick one of the 12 trained
+  models, and get an instant prediction — up or down — with a confidence score.
+  Everything is pre-trained and loaded from disk, so nothing trains live. This
+  session we added the dataset selector, so the app now works across all 3
+  datasets. We also tested it in a real browser, and confirmed switching datasets
+  correctly reloads the right models, instead of showing old results."**
 
 ---
 
@@ -420,15 +428,17 @@ Course: Statistical Analysis & Machine Learning — DSA Spring 2026
 >   try an XGB+HGB ensemble · investigate LR/Bagging_LR overfitting
 
 **Speaker notes (Linh):
-  "To wrap up: all four course goals are executed end to end — data collection
-  through a look-ahead-safe pipeline, EDA-driven feature engineering, 12 fine-tuned
-  models validated with proper walk-forward cross-validation across all 3 datasets,
-  and a working Streamlit app on top of it. If you take one number away: there's no
-  single best model — it depends whether you care about raw accuracy or whether the
-  strategy actually makes money, and XGB and HGB are our pick because they're the
-  only models where those two stories agree. Next steps are training the remaining
-  registry models, extending our backtest to Dataset 3, and digging into why more
-  data didn't automatically mean a better trading result."**
+  "To wrap up: we completed all four course goals. We collected data through a
+  look-ahead-safe pipeline. We ran EDA-driven feature engineering. We trained and
+  validated 12 models with proper walk-forward cross-validation, across all 3
+  datasets. And we built a working Streamlit app on top of it.
+
+  If you remember one thing: there is no single best model. It depends whether
+  you care about raw accuracy, or whether the strategy actually makes money. We
+  recommend XGB and HGB, because they're the only models where those two stories
+  agree. Next steps: train the remaining registry models, extend our backtest to
+  Dataset 3, and dig into why more data didn't automatically mean better trading
+  results."**
 
 ---
 

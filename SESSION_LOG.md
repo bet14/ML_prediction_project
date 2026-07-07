@@ -5,6 +5,24 @@
 
 ---
 
+## 2026-07-07 17:15 — Re-synced `presentation_outline.md` to the live `reports/draft_final_presentation.html` (11 slides), rewritten for a 15-minute talk
+
+**Branch:** branch_lee
+
+**Done:**
+- Read the deployed HTML at https://bet14.github.io/ML_prediction_project/reports/draft_final_presentation.html plus the local file directly (line-by-line for all 11 `slides.push(...)` blocks) to confirm exactly what changed since the outline was last touched — mainly the 16:40 session's Slide 7/8 rework (formulas box, Accuracy&Profit-by-dataset table, bias-variance trade-off charts, "Which model is most effective" table, tag-pill issues/next-steps)
+- Rewrote `presentation_outline.md` from scratch: dropped all stale `DRAFT` / `What changed` history sections (the 6b/7b/8b draft is now just... the live deck), confirmed the live deck is 11 slides not 12 (Data Collection + Data Limitations were already merged into one "Data" slide), and rewrote every slide's content summary + speaker notes to match the current HTML verbatim (titles, tables, chart order, tag-pill chips)
+- Changed the talk duration from 10 minutes to **15 minutes** per user request; rebuilt the whole time budget table at the top of the file (Manim ~2:30, Somitha ~4:30, Linh ~7:00) — Linh's Goal 3/4 section absorbed most of the extra 5 minutes since Slide 8 (Evaluation & Results) is now the single biggest slide in the deck
+- Speaker split unchanged: Manim = Goal 1 (Title + Data), Somitha = Goal 2 (Target, EDA, Feature Engineering), Linh = Goal 3 + 4 (Model Pipeline/CV, Hyperparameter, Evaluation, Streamlit, Conclusion) + References shown on screen only
+
+**Stopped at:** outline is now the source-of-truth mirror of the live HTML; not yet read aloud/timed by a human to confirm the ~15:00 total holds in practice.
+
+**Next steps:**
+1. Do a live read-through with a timer to confirm the per-slide seconds in the budget table are realistic, especially Slide 8 (~2:20, the densest slide)
+2. Commit `presentation_outline.md` together with the still-uncommitted `reports/draft_final_presentation.html` from the 16:40 session when ready to push
+
+---
+
 ## 2026-07-07 16:40 — Reworked `reports/draft_final_presentation.html` Slides 7-8: pruned overfitting/bias-variance text, renamed Slide 8 to "Evaluation & Results", pulled in the Slide-8b draft content (formulas, per-dataset Accuracy/Profit table, bias-variance charts), reorganized section order, and rewrote the Profit/Accuracy formulas in proper academic math notation
 
 **Branch:** branch_lee
