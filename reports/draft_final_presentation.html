@@ -92,6 +92,18 @@
   li{margin-bottom:6px; line-height:1.45; font-size:.92rem;}
   .mono{font-family:'Cascadia Code',Consolas,monospace; font-size:.82rem; background:var(--bg);
     border:1px solid var(--border); border-radius:8px; padding:10px 12px; white-space:pre-wrap; line-height:1.5;}
+  .math-box{background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px 16px;}
+  .math-box .eq-label{font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px; font-weight:700;}
+  .math-box .eq-label:not(:first-child){margin-top:14px;}
+  .eq{font-family:'Cambria Math','STIX Two Math',Cambria,Georgia,'Times New Roman',serif; font-style:italic;
+    font-size:1.05rem; line-height:2.3; text-align:center; margin:6px 0; color:var(--text);}
+  .eq .rm{font-style:normal;}
+  .frac{display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; margin:0 5px; font-size:.82em; line-height:1.3; position:relative; top:.28em;}
+  .frac .num{border-bottom:1.3px solid currentColor; padding:0 5px 2px;}
+  .frac .den{padding:2px 5px 0;}
+  .math-legend{font-family:'Cambria Math','STIX Two Math',Cambria,Georgia,'Times New Roman',serif; font-size:.82rem; color:var(--muted); margin:10px 0 0; line-height:1.7;}
+  .math-legend i{font-style:italic; color:var(--text);}
+  .math-note{font-family:'Segoe UI',Inter,system-ui,sans-serif; font-style:normal; font-size:.78rem; color:var(--muted); text-align:left; margin-top:6px;}
   .flow{display:flex; align-items:stretch; gap:10px; flex-wrap:wrap; margin:16px 0;}
   .flow-step{
     background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:12px 16px;
@@ -1274,19 +1286,32 @@ slides.push(`
 <h2>Evaluation &amp; Results</h2>
 <div class="box" style="margin-bottom:14px;">
   <h3>Formulas — Accuracy &amp; Profit</h3>
-  <div class="mono">Direction(t) = 1  if Close(t+1) &gt; Close(t)
-             0  otherwise
-
-Accuracy = (1/N) &middot; &Sigma;<sub>i=1..N</sub> 1{&#375;(i) = y(i)}
-  &#375;(i) = predicted Direction, y(i) = true Direction
-  N = number of test days &middot; 50% = coin flip
-
-Profit (Guyard &amp; Deriaz 2024, &sect;5.3) &mdash; long/short, P(0) = 1:
-  P(t) = P(t&minus;1) &times; C(t)/C(t&minus;1)     if &#375;(t) = 1  (go long)
-  P(t) = P(t&minus;1) &times; C(t&minus;1)/C(t)     if &#375;(t) = 0  (go short)
-  Profit % = (P(T) &minus; 1) &times; 100
-  &rarr; positive = strategy made money over the test year
-  &rarr; negative = strategy lost money, even if accuracy looks fine</div>
+  <div class="cols">
+    <div class="math-box">
+      <div class="eq-label">Direction label</div>
+      <div class="eq"><i>Direction</i>(<i>t</i>) = <span class="rm">{</span> 1 <span class="rm">if</span> <i>Close</i>(<i>t</i>+1) &gt; <i>Close</i>(<i>t</i>)<br><span class="rm">&nbsp;&nbsp;&nbsp;&nbsp;</span>0 <span class="rm">otherwise</span></div>
+      <div class="eq-label">Accuracy</div>
+      <div class="eq"><i>Accuracy</i> = <span class="frac"><span class="num">1</span><span class="den">N</span></span> &middot; <span class="rm" style="font-size:1.3em;">&Sigma;</span><sub style="font-size:.6em;"><i>i</i>=1</sub><sup style="font-size:.6em;"><i>N</i></sup> <span class="rm">1</span>{ &#375;(<i>i</i>) = <i>y</i>(<i>i</i>) }</div>
+      <div class="math-legend">
+        <i>&#375;</i>(<i>i</i>) = predicted <i>Direction</i> for test day <i>i</i> &middot; <i>y</i>(<i>i</i>) = true <i>Direction</i><br>
+        <i>N</i> = number of test days
+      </div>
+      <div class="math-note">Reference: 50% = coin-flip baseline.</div>
+    </div>
+    <div class="math-box">
+      <div class="eq-label">Profit (Guyard &amp; Deriaz 2024, &sect;5.3) — long/short, <i style="font-family:inherit;">P</i>(0) = 1</div>
+      <div class="eq">
+        <i>P</i>(<i>t</i>) = <i>P</i>(<i>t</i>&minus;1) &times; <span class="frac"><span class="num"><i>C</i>(<i>t</i>)</span><span class="den"><i>C</i>(<i>t</i>&minus;1)</span></span> <span class="rm">if &#375;(t) = 1 (go long)</span><br>
+        <i>P</i>(<i>t</i>) = <i>P</i>(<i>t</i>&minus;1) &times; <span class="frac"><span class="num"><i>C</i>(<i>t</i>&minus;1)</span><span class="den"><i>C</i>(<i>t</i>)</span></span> <span class="rm">if &#375;(t) = 0 (go short)</span><br>
+        <i>Profit</i>% = ( <i>P</i>(<i>T</i>) &minus; 1 ) &times; 100
+      </div>
+      <div class="math-legend">
+        <i>P</i>(<i>t</i>) = simulated strategy's cumulative portfolio value at day <i>t</i>, starting at 1<br>
+        <i>C</i>(<i>t</i>) = GBP/USD closing price at day <i>t</i> &middot; <i>T</i> = last day of the test year
+      </div>
+      <div class="math-note">&rarr; positive = strategy made money over the test year &middot; negative = strategy lost money, even if accuracy looks fine.</div>
+    </div>
+  </div>
   <p style="font-size:.8rem; color:var(--muted); margin-top:8px;">Computed annually — a single fit on 2014&ndash;2023, predicting the full 2024 test year in one pass. All numbers below are the true 2024 held-out year from walk-forward CV, never touched during hyperparameter tuning.</p>
 </div>
 <div class="box" style="margin-bottom:14px;">
@@ -1328,13 +1353,6 @@ Profit (Guyard &amp; Deriaz 2024, &sect;5.3) &mdash; long/short, P(0) = 1:
   </div>
 </div>
 <div class="box" style="margin-bottom:14px;">
-  <h3>Model status</h3>
-  <table>
-    <tr><th>Status</th><th>Models</th><th>Detail</th></tr>
-    <tr><td class="num-good">Trained &amp; fine-tuned</td><td class="num-accent">LR, RF, XGB, LGBM, MLP, KNN, DT, ET, HGB, CatBoost, Bagging_DT, Bagging_LR</td><td>Full walk-forward CV (6 folds) + Bayesian search (50 trials each) &middot; now trained across <b>all 3 datasets</b> (216 model&times;fold&times;dataset rows in <code>model_comparison.csv</code>) — see the previous slide for training details</td></tr>
-  </table>
-</div>
-<div class="box" style="margin-bottom:14px;">
   <h3>Dataset 1 vs 2 vs 3 — does more data help?</h3>
   <table>
     <tr><th>Dataset</th><th>Shape</th><th>Best model (2024 final acc.)</th><th>Reading</th></tr>
@@ -1342,6 +1360,17 @@ Profit (Guyard &amp; Deriaz 2024, &sect;5.3) &mdash; long/short, P(0) = 1:
     <tr><td>2 — 90-Day Lookback</td><td>2,778 rows &times; 9,111 cols</td><td class="num-bad">CatBoost — 62.1% (near coin-flip for every model)</td><td><b>Negative result</b> — p&gg;n (9,111 cols vs. ~2,700 training rows); design matrix is too rank-deficient / diluted for any of the 12 models, tree-based included</td></tr>
     <tr><td>3 — Technical Indicators</td><td>2,778 rows &times; 1,178 cols</td><td class="num-good">LGBM &amp; HGB (tied) — 83.1% (CV ~80%, gap +3.0&ndash;3.4pp)</td><td><b>Strong, consistent win</b> for every tree/boosting model (80-83% acc., 0.89-0.91 AUC). Fix 2026-07-06: dropped the same 5 multicollinear equity indices Dataset 1 excludes (was mistakenly using all 9) &mdash; linear models (LR, Bagging_LR) now score <i>higher</i> than on Dataset 1, consistent with multicollinearity hurting linear estimators. Sharpe proxy is still <span class="num-bad">negative for most models (10/12)</span> despite the accuracy jump</td></tr>
   </table>
+</div>
+<div class="box" style="margin-bottom:14px;">
+  <h3>Which model is most effective? — depends on the metric</h3>
+  <table>
+    <tr><th>Lens</th><th>Winner (2024 held-out)</th><th>Reading</th></tr>
+    <tr><td>Accuracy</td><td class="num-accent">Bagging_LR — 67.4%</td><td>Best raw hit-rate, but CV score (73.7%) was inflated 6.3pp above this</td></tr>
+    <tr><td>Risk-adjusted (Sharpe proxy)</td><td class="num-accent">XGB — 1.28 &middot; HGB — 1.24</td><td>Both mid-table on accuracy (61-62%) but the only models with strongly positive Sharpe</td></tr>
+    <tr><td>Most stable across CV folds</td><td class="num-accent">XGB &middot; CatBoost</td><td>Lowest year-to-year variance — least regime-dependent</td></tr>
+    <tr><td>Worst</td><td class="num-bad">DT — 47.5%</td><td>Below the 50% coin-flip baseline on the true 2024 test</td></tr>
+  </table>
+  <p style="font-size:.82rem; color:var(--muted); margin-top:8px;">Recommendation: <b>XGB or HGB</b> for a live/practical setting — they are the only models where the accuracy story and the Sharpe story agree. (Table scoped to Dataset 1 — see the dataset-comparison box below for how CatBoost/LGBM overtake on Dataset 3's raw accuracy, without a better Sharpe proxy.)</p>
 </div>
 <div class="grid-charts">
   <div class="chart-wrap">
@@ -1381,39 +1410,24 @@ Profit (Guyard &amp; Deriaz 2024, &sect;5.3) &mdash; long/short, P(0) = 1:
   </div>
 </div>
 <div class="box" style="margin-top:16px;">
-  <h3>Which model is most effective? — depends on the metric</h3>
-  <table>
-    <tr><th>Lens</th><th>Winner (2024 held-out)</th><th>Reading</th></tr>
-    <tr><td>Accuracy</td><td class="num-accent">Bagging_LR — 67.4%</td><td>Best raw hit-rate, but CV score (73.7%) was inflated 6.3pp above this</td></tr>
-    <tr><td>Risk-adjusted (Sharpe proxy)</td><td class="num-accent">XGB — 1.28 · HGB — 1.24</td><td>Both mid-table on accuracy (61-62%) but the only models with strongly positive Sharpe</td></tr>
-    <tr><td>Most stable across CV folds</td><td class="num-accent">XGB · CatBoost</td><td>Lowest year-to-year variance — least regime-dependent</td></tr>
-    <tr><td>Worst</td><td class="num-bad">DT — 47.5%</td><td>Below the 50% coin-flip baseline on the true 2024 test</td></tr>
-  </table>
-  <p style="font-size:.82rem; color:var(--muted); margin-top:8px;">Recommendation: <b>XGB or HGB</b> for a live/practical setting — they are the only models where the accuracy story and the Sharpe story agree. (Table scoped to Dataset 1 — see the dataset-comparison box above for how CatBoost/LGBM overtake on Dataset 3's raw accuracy, without a better Sharpe proxy.)</p>
-</div>
-<div class="box" style="margin-top:16px;">
   <h3>Open issues &amp; next steps</h3>
   <div class="cols">
-    <div>
-      <h4 style="margin:0 0 6px; font-size:.88rem; color:var(--bad);">Issues</h4>
-      <ul>
-        <li>Accuracy leader ≠ profit leader — Bagging_LR has the best Dataset-1 accuracy but the worst Sharpe of all 12 models</li>
-        <li>LR / Bagging_LR generalize worse than their CV score suggests (6-8pp drop on 2024)</li>
-        <li>Dataset 2 (90-day lookback) is a documented negative result — near-random for every model, p&gg;n</li>
-        <li>Dataset 3's much higher accuracy does not translate into a better Sharpe proxy — worth investigating before trusting it for a live setting</li>
-        <li>Final test is a single year (~260 trading days) — one regime, noisy estimate</li>
-        <li>SVM kernels, Bagging_KNN, and GB are defined in the registry but not trained yet — deprioritized behind the presentation deadline</li>
-      </ul>
+    <div class="tag-group" style="margin-bottom:0;">
+      <h4 style="color:var(--bad);">Issues</h4>
+      <span class="tag-pill">Accuracy leader &ne; profit leader (Bagging_LR)</span>
+      <span class="tag-pill">LR / Bagging_LR overfit — 6&ndash;8pp CV&rarr;Final drop</span>
+      <span class="tag-pill">Dataset 2: negative result, p&gg;n</span>
+      <span class="tag-pill">Dataset 3: high accuracy, weak Sharpe</span>
+      <span class="tag-pill">2024 test = 1 year, noisy estimate</span>
+      <span class="tag-pill">SVM, Bagging_KNN, GB not yet trained</span>
     </div>
-    <div>
-      <h4 style="margin:0 0 6px; font-size:.88rem; color:var(--good);">Next steps</h4>
-      <ul>
-        <li>Investigate why LR / Bagging_LR overfit (regularization strength, feature count vs. sample size)</li>
-        <li>Extend <code>src/evaluation/backtest.py</code> (already built, transaction-cost-aware) to Dataset 3's top tree/boosting models to explain the accuracy&ndash;Sharpe disconnect</li>
-        <li>Try an ensemble of the top-Sharpe models (XGB + HGB) instead of a single best-accuracy pick</li>
-        <li>Mitigate Dataset 2's p&gg;n problem via feature selection / PCA, or keep it as a documented negative result</li>
-        <li>Train the remaining registry models (SVM kernels, Bagging_KNN, GB) as time allows</li>
-      </ul>
+    <div class="tag-group" style="margin-bottom:0;">
+      <h4 style="color:var(--good);">Next steps</h4>
+      <span class="tag-pill">Investigate LR / Bagging_LR overfitting</span>
+      <span class="tag-pill">Extend <code>backtest.py</code> to Dataset 3 top models</span>
+      <span class="tag-pill">Try XGB + HGB ensemble</span>
+      <span class="tag-pill">Mitigate Dataset 2 p&gg;n (feature selection / PCA)</span>
+      <span class="tag-pill">Train remaining registry models</span>
     </div>
   </div>
 </div>

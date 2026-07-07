@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-07-07 16:40 — Reworked `reports/draft_final_presentation.html` Slides 7-8: pruned overfitting/bias-variance text, renamed Slide 8 to "Evaluation & Results", pulled in the Slide-8b draft content (formulas, per-dataset Accuracy/Profit table, bias-variance charts), reorganized section order, and rewrote the Profit/Accuracy formulas in proper academic math notation
+
+**Branch:** branch_lee
+
+**Done:**
+
+### Slide 7 (Training & Fine-Tuning) — removed two sections per user request
+- Deleted the "Curves used to evaluate fit" table and the "Bias-variance tradeoff — read from the real fold numbers" 3-card block (LR/Bagging_LR high-variance, XGB/CatBoost low-variance, DT high-bias write-up); this content was superseded by the Slide 8b bias-variance material added later in the session
+
+### Slide 8: renamed "Models & Results" -> "Evaluation & Results"; removed the "Metrics we'll cite from here on" table (Accuracy/F1-macro/AUC-ROC/Sharpe proxy/Max drawdown reference-range table) per user request, keeping only "Model status" at that point
+
+### Pulled Slide 8b's draft content (from a separate artifact: `https://claude.ai/code/artifact/3dbafae8-...`, fetched via WebFetch) into the top of Slide 8
+- Added a "Formulas — Accuracy & Profit" box (Direction/Accuracy/Profit definitions, Guyard & Deriaz 2024 §5.3 long/short rule) — explicitly dropped all "Monthly walk-forward" scheme references from the source artifact per user instruction, since this project only computes Annual (single fit on 2014-2023, predict all of 2024)
+- Added "Accuracy & Profit by model and dataset (2024, Annual scheme)" table — 12 models x 3 datasets x {Acc., Profit}, colored `num-good`/`num-bad` by profit sign
+- Added "Bias-variance trade-off" section with 3 real chart images (Dataset 1/2/3 Accuracy-vs-Sharpe scatter, 4 models labeled per dataset) — extracted the actual base64 PNGs from the fetched artifact's saved HTML via `awk`/`sed` text surgery (never loaded the ~120KB base64 blobs into the model's own context) and wired them in through the deck's existing `__PLACEHOLDER__` -> `const ..._B64` -> `.replace()` pattern (3 new consts: `TRADEOFF_DS1_B64`, `TRADEOFF_DS2_B64`, `TRADEOFF_DS3_B64`)
+
+### Removed "Model status" box entirely; moved "Which model is most effective? — depends on the metric" box up to sit immediately below "Dataset 1 vs 2 vs 3 — does more data help?" (previously it was much further down, after all the per-model charts)
+
+### Condensed "Open issues & next steps" from full-sentence `<ul><li>` bullets into `tag-group`/`tag-pill` chips (matching the compact style already used in the "Key EDA findings" box) per user's "dùng tag ngắn gọn lại" request
+
+### Rewrote the Profit/Accuracy formulas in the new "Formulas" box as proper academic math instead of a `<mono>` code block
+- User asked what `P` and `C` actually meant in the Profit formula and wanted a real math-formula look (2 columns: Accuracy | Profit)
+- Added new CSS (`.math-box`, `.eq`, `.frac` w/ true fraction bars via `border-bottom`, `.math-legend`, `.math-note`) using a serif/italic math font stack (`Cambria Math`/`STIX Two Math`/Georgia) — no MathJax/KaTeX, self-contained per Artifact CSP rules
+- Split into a 2-column `.cols` layout: left = Direction label + Accuracy (Σ with proper sub/superscript N and i=1), right = Profit (Guyard & Deriaz 2024 §5.3), with an explicit legend defining **P(t)** = simulated strategy's cumulative portfolio value at day t (P(0)=1) and **C(t)** = GBP/USD closing price at day t, T = last day of the test year
+
+**Stopped at:** all edits applied directly to `reports/draft_final_presentation.html` (no `.bak` made — this is a generated/hand-maintained report file, not a `.py` script under the CLAUDE.md backup-before-edit rule). Could not visually verify in a real browser this session — the Chrome extension refused `file://` navigation from a fresh `chrome://newtab` tab and a follow-up attempt to navigate to any external URL first (`example.com`) was blocked by the permission classifier as unrelated to the task; verification was done by careful text-level review (line counts, tag balance, placeholder/const name matching) instead of rendering.
+
+**Next steps:**
+1. Open `draft_final_presentation.html` manually in a browser to visually confirm Slide 7/8's new layout, the 2-column math formulas, and the 3 new bias-variance chart images render correctly (not yet done this session — see Stopped-at)
+2. `push.bat` once user wants to commit — updated `reports/draft_final_presentation.html`, plus everything else still sitting uncommitted from prior sessions (trained `.joblib` files, `model_comparison.csv`, dataset comparison scripts/report, `scripts/plot_variance_tradeoff.py` + regenerated PNGs from the 14:30 session)
+3. `presentation_outline.md` was NOT updated to match these Slide 7/8 changes this session (unlike most prior deck-editing sessions) — the HTML is currently ahead of the outline; sync them next time the outline is touched
+
+---
+
 ## 2026-07-07 14:30 — Replaced the accuracy-vs-Sharpe scatter with a real bias-variance trade-off chart in `scripts/plot_variance_tradeoff.py`; updated `presentation_outline.md` and `map.md` to match
 
 **Branch:** branch_lee
