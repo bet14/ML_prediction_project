@@ -5,246 +5,161 @@
 
 ---
 
-## 2026-07-03 20:15 — New "Model Training & Fine-Tuning" slide, corrected app.py status, verified regularization/tuning by reading code
+## 2026-07-07 14:30 — Replaced the accuracy-vs-Sharpe scatter with a real bias-variance trade-off chart in `scripts/plot_variance_tradeoff.py`; updated `presentation_outline.md` and `map.md` to match
 
 **Branch:** branch_lee
 
 **Done:**
 
-### Fact-check: src/app/app.py — confirmed already built, not "not yet built"
-- Read the file directly: 169 lines, `STATUS: production`, model/fold selector, metrics, predicted-vs-actual chart, feature importance, comparison table/charts — fully working, previously verified running via `streamlit run` (2026-07-02 session)
-- Slide 10 (Streamlit App)'s "Status" table incorrectly said `src/app/app.py` = "Not yet built" (leftover from an earlier draft stage) — corrected to "Built — 169 lines, verified running via streamlit run"
-- Removed "12/22 ready" framing throughout (Slide 9 status table, Slide 10 status table, Slide 9's issues/next-steps list) — reworded to state the 12 trained models by name and describe the rest as "planned next, time allowing" instead of a fraction
+### User feedback: the "VARIANCE & TRADE-OFF" charts (Slide 8b) weren't actually a bias-variance chart
+- The existing `scripts/plot_variance_tradeoff.py` plotted accuracy (x) vs. Sharpe proxy (y) with all 12 models individually labeled per dataset — a profit-vs-accuracy trade-off, not a bias-variance one, despite the filename/slide title. User asked for the real bias-variance trade-off, clarified per dataset, and to drop the "spot every model by name" clutter.
 
-### Verified fine-tuning/regularization by reading the actual code and JSON files (not assumed)
-- Read `models/search_results/*.json` for all 12 trained models directly — confirmed every one has a saved Optuna best-params file (all fine-tuned, none left on library defaults)
-- Confirmed only **LR** (`penalty` ∈ {l1, l2} + C) and **HGB** (`l2_regularization`) carry an explicit classic regularization term; LR's actual tuned result is **L1, C=0.68**. MLP uses `alpha` (L2 weight decay, tuned to 0.0025). Bagging_LR's base LogisticRegression keeps sklearn's default L2 (only C + n_estimators were searched, not penalty). Tree ensembles (RF/ET/DT/Bagging_DT/XGB/LGBM/CatBoost) regularize structurally via depth/leaf/sampling limits, no L1/L2 term.
-- Confirmed no classic train/val "learning curve" exists in the codebase (`scripts/plot_model_comparison.py` has only 4 chart functions: CV-vs-Final accuracy, AUC-by-model, accuracy-per-fold, Sharpe-by-model) — these substitute for a learning curve since a random train/val split would leak future information in a time series
-- Computed real CV-vs-Final accuracy gaps directly from `model_comparison.csv` to ground the bias-variance claims (LR +8.2pp gap, Bagging_LR +6.3pp gap = overfit; XGB +1.0pp, CatBoost −4.5pp = well-generalized; DT capped at max_depth=3 by the search itself = underfit)
+### Rewrote `scripts/plot_variance_tradeoff.py` to build a genuine bias-variance scatter from the real walk-forward CV fold numbers in `reports/tables/model_comparison.csv`
+- x-axis = fold-to-fold accuracy std-dev across inner CV folds 1-5 (variance — how much a model's accuracy swings year to year during tuning)
+- y-axis = final (2024 held-out) accuracy (bias proxy — low accuracy = underfit regardless of stability)
+- Reference lines: 50% coin-flip (high-bias threshold) and each dataset's own median fold-to-fold σ (typical variance for that dataset) — ideal quadrant = top-left
+- Only 4 points per dataset are labeled (auto-picked, not hardcoded): highest final accuracy, lowest final accuracy, highest variance, and a "best trade-off" point (highest accuracy among below-median-variance models) — the other ~8 models are plain dots colored by family (Linear / Tree-Bagging / Boosting / Other) via a legend, replacing the old 12-name clutter
+- Same 3 output filenames as before (`variance_tradeoff_dataset{1,2,3}_*.png`), so no other doc/script needed a filename update
 
-### reports/draft_final_presentation.html — new Slide 8 "Model Training & Fine-Tuning"
-- Inserted between Walk-Forward CV and Models & Results (now slide 8 of 12; sidebar renumbered, `slides.length` auto-drives the counter)
-- Training workflow diagram (Bayesian search → inner validation on fold 5 → best_params.json → refit on all 6 folds)
-- Full 12-model table: family, how each model works, which regularization/complexity knob was tuned, and the actual best value found (real numbers from search_results/*.json, not placeholders)
-- Table of the 4 evaluation charts and what each one reads as
-- 3-card bias-variance breakdown (high variance/overfit: LR, Bagging_LR · low variance/well-generalized: XGB, CatBoost · high bias/underfit: DT), all numbers pulled from model_comparison.csv this session
+### Ran the script and visually verified all 3 regenerated PNGs
+- Dataset 1 (Basic Daily): CatBoost auto-labeled "best trade-off" (63.2% acc, σ=0.033) vs. Bagging_LR (highest acc 67.4% but σ=0.047) and DT (lowest acc 47.5%, below coin flip)
+- Dataset 2 (90-Day Lookback): whole cloud sits in a tight 48-62% band regardless of variance — visual confirmation of the already-documented p≫n negative-result finding; CatBoost still tops accuracy (62.1%)
+- Dataset 3 (Technical Indicators): boosting/tree cluster (LGBM, HGB, CatBoost, ET, XGB, Bagging_DT) packs into the top-left ideal quadrant at 82-83% accuracy, low variance; HGB auto-labeled "best trade-off"; DT is a dramatic outlier — highest variance in the whole project (σ=0.096, 3-4x every other model) and the only sub-50% accuracy on this dataset
 
-### Verified in-browser
-- Served over temporary local `python -m http.server` (stopped afterward): checked new slide 8 in full, Slide 9 status table wording, Slide 10 status table — all render correctly, no leftover "12/22" phrasing found in a follow-up grep of Slide 9's issues/next-steps list (fixed 2 more instances there too).
+### Updated `presentation_outline.md` (Slide 8b section + Goal 3 summary + speaker notes) to describe the new chart correctly
+- Replaced all "accuracy on x-axis, Sharpe proxy on y-axis" / "all 12 models spotted" language with the new axis definitions, reference lines, and per-dataset labeled-point description
+- Rewrote the per-chart bullet points and speaker notes paragraph with real numbers pulled from the regenerated charts; removed a leftover duplicate sentence fragment from the old draft that had survived an earlier edit
 
-**Stopped at:** all requested changes applied and visually verified; not committed/pushed yet.
+### Updated `map.md` entry for `plot_variance_tradeoff.py` to describe the new axes/behavior instead of the old accuracy-vs-Sharpe wording
+
+**Stopped at:** script rewritten, run, and verified visually against all 3 datasets; `presentation_outline.md` and `map.md` both updated to match. `reports/draft_final_presentation.html` does not reference these charts directly (no changes needed there for this task) — its other unrelated pending diff from before this session was left untouched.
 
 **Next steps:**
-1. User to do a final visual pass in their own browser, especially the new Slide 8 model table on narrow widths
-2. `push.bat` once approved
-3. Resume Dataset 2/3 (90-day lookback / technical indicators) work — still not started
-4. Decide what to do with `References/06_Admin_Affiliation_Document.pdf` (flagged earlier as likely misplaced personal data, still unresolved)
+1. If `draft_final_presentation.html`'s Slide 8b is ever built out with embedded images (currently only in the text outline draft), embed the 3 regenerated PNGs there too, using the new bias-variance description
+2. `push.bat` once user wants to commit — updated `scripts/plot_variance_tradeoff.py`, regenerated `reports/figures/variance_tradeoff_dataset{1,2,3}_*.png`, `presentation_outline.md`, `map.md`
+3. Everything else still uncommitted from prior sessions (trained `.joblib` files, `model_comparison.csv`, dataset comparison report/scripts, the pre-existing `draft_final_presentation.html`/`map.md` diff from session start) remains pending, carried over unchanged
 
 ---
 
-## 2026-07-03 19:30 — Converted 3 more tables to card/diagram style, fixed encoding
+## 2026-07-06 19:15 — Fixed Dataset 3 (Technical Indicators) still using all 9 equity indices instead of the 4 non-redundant ones; rebuilt dataset, retrained all 12 models, updated reports/docs
 
 **Branch:** branch_lee
 
 **Done:**
 
-### reports/draft_final_presentation.html — more table→card conversions (continuing from previous session's diagram restyle)
-- Slide 3 (Data Limitations): "Two features investigated and excluded" table → 2-card `.pipe-detail-grid` (Composite PMI, FX trading volume), each card keeping the issue text and a `num-bad` "Decision: Excluded" line
-- Slide 4 (Target Variable Definition): "Task: GBP/USD next-day direction prediction" table → 4-card `.pipe-detail-grid` (What is predicted / Input / Target / Problem type), matching the same blue→purple→orange→green accent cycle used elsewhere in the deck
-- Slide 6 (Feature Engineering): "Dropped (EDA-justified)" and "Added / encoded" tables → put side by side in a `.cols` (2-column) layout, each column itself a 2-col `.pipe-detail-grid` of cards (6 dropped-feature cards, 4 added-feature cards) — matches the "Three data categories" card pattern from Slide 2
+### Found and fixed an inconsistency: `build_dataset_technical.py` never applied the equity redundant-index filter
+- User asked why Dataset 3 computes technical indicators for all 9 equity indices when Dataset 1 (`build_dataset.py`'s `REDUNDANT_INDICES`) already found 5 of them multicollinear (`USA_DJI`, `USA_NASDAQ_COMPOSITE`, `UK_FTSE250`, `UK_FTSE350`, `UK_FTSE_ALL_SHARE`, per `notebooks/03_feature_analysis.ipynb` correlation analysis) and dropped them
+- Confirmed via `References/DATASET_2_3_PLAN.md` line 102 that the *plan* for Dataset 2 (90-day lookback) explicitly intended "4 index còn lại" after dropping the 5 redundant ones, but the Dataset 3 plan/implementation was never updated to match — an oversight, not an intentional design choice (no Q1-Q4 decision in the plan doc ever addressed this for Dataset 3 specifically)
+- Backed up `src/features/build_dataset_technical.py` -> `.py.bak`, then imported `REDUNDANT_INDICES` from `build_dataset.py` and filtered `equity_indices` before the technical-indicator loop; remaining 4 equity indices: `UK_FTSE100`, `USA_NASDAQ100`, `USA_RUSSELL2000`, `USA_SP500`
 
-### Fixed missing charset declaration
-- File had no `<meta charset="utf-8">` — caused mojibake ("Â·", "â‰ˆ") when served over plain HTTP (e.g. `python -m http.server` without a charset header, browser guessed wrong encoding). Added `<meta charset="utf-8">` right before `<title>`. Affects the whole deck, not just today's edits — a real bug now fixed, not just a test artifact.
+### Rebuilt Dataset 3 and retrained everything downstream
+- `python src/features/build_dataset_technical.py` -> `data/processed/dataset_technical.csv` shrank from ~1,538 to **1,178 cols** (2,778 rows, unchanged), NaN 0.09%
+- Retrained all 12 fast models x 6 folds on the new `dataset_technical` (`python src/models/train.py --dataset dataset_technical --models LR RF DT KNN HGB XGB LGBM CatBoost ET MLP Bagging_LR Bagging_DT`) — `reports/tables/model_comparison.csv` upserted cleanly (72 rows for dataset_technical, no duplicates, verified via key `dataset+model+fold`)
+- Regenerated `reports/figures/dataset_comparison_{accuracy,auc,sharpe,overfit_gap}.png` (`scripts/plot_dataset_comparison.py`) and `reports/dataset_comparison.html` (`scripts/generate_dataset_comparison_report.py`)
 
-### Verified in-browser
-- Served over temporary local `python -m http.server` (stopped afterward), checked slides 1, 3, 4, 6 — all render correctly, correct colors, correct UTF-8 characters (·, ≈, →) after the charset fix.
+### Updated docs to match the new column counts
+- `References/DATASET_2_3_PLAN.md`: added a dated correction row/note to the "ĐÃ CHỐT" column-count table and to the Next Steps section (both previously said 9 index / ~1,538 cols)
+- `map.md`: Dataset 3 row now says "~1,178 cols" and notes the 4-index filter
 
-**Stopped at:** all requested changes applied and visually verified; not committed/pushed yet.
+**Stopped at:** fix verified end-to-end (rebuild -> retrain -> reports regenerated -> docs updated). No backtest existed for `dataset_technical` before this session, so none was generated now (out of scope of this fix — `backtest.py` only covers `dataset_basic_daily` models so far, a pre-existing gap).
 
 **Next steps:**
-1. User to do a final visual pass in their own browser
-2. `push.bat` once approved
-3. Resume Dataset 2/3 (90-day lookback / technical indicators) work and `src/app/app.py` build — still not started, carried over from earlier sessions
-4. Decide what to do with `References/06_Admin_Affiliation_Document.pdf` (flagged earlier as likely misplaced personal data, still unresolved)
+1. If backtesting Dataset 3 models is wanted later, extend `src/evaluation/backtest.py` to accept `--dataset dataset_technical`
+2. Presentation deck (`reports/draft_final_presentation.html`, Slide 9) cites the old Dataset 2/3 comparison numbers/charts — will need re-embedding the regenerated PNGs and re-checking the accuracy/Sharpe figures next time that deck is touched
+3. Consider a quick correlation check on the new 4 equity indices + their technical indicators to confirm no further redundancy remains before relying on Dataset 3 results
 
 ---
 
-## 2026-07-03 18:45 — Split Streamlit slide out, restyled pipeline diagrams to match reference deck
+## 2026-07-06 17:30 — Clarified pipeline-vs-feature-engineering placement in the deck; compared deck's intro workflow against the course's official ML-workflow schema; drafted then split out personal "Framing/Maintain" notes
 
 **Branch:** branch_lee
 
 **Done:**
 
-### reports/draft_final_presentation.html — Streamlit App promoted to its own slide (Goal 4)
-- Slide 8 was previously "Models, Results & Streamlit Interface" combined in one slide — split into Slide 8 "Models & Results" and a new Slide 9 "Streamlit App"
-- New Streamlit slide adds an "App data flow" diagram (User input → Model selector → Pipeline.predict() → Direction+confidence) plus the 3 feature cards (input form, prediction output, feature importance) and a build-status table (`src/app/app.py` still not built; 12/22 trained models ready to load)
-- Sidebar/nav renumbered: 9 Streamlit App → 10 Conclusion → 11 References (11 slides total, `slides.length` auto-drives the count so no other JS changes needed)
+### Clarified why `InfinityToNaNTransformer -> SimpleImputer(median) -> RobustScaler` lives on Slide 7 (Model Pipeline) and not Slide 6 (Feature Engineering) in `reports/draft_final_presentation.html`
+- User's question was legitimate: these look like feature-engineering steps. Reason they're intentionally separate: Slide 6's drops/additions (CPI YoY, log returns, rate_differential, date encoding) are static, dataset-level transforms computed once before any CV split; imputation/scaling must be refit per training fold (median/IQR fit only on train, never test) to avoid leakage — that's why they're bundled inside the sklearn Pipeline object on Slide 7 instead
+- Added one short italic note on each slide (Slide 6: "imputation/scaling aren't shown here... run per training fold inside the model Pipeline (Slide 7) to avoid leakage"; Slide 7: "Refit per training fold here, not once in Feature Engineering (Slide 6) — intentional, to avoid leakage")
+- Added the full explanation to `presentation_outline.md`'s Slide 6 speaker notes and Slide 7 content (the short HTML notes point here for detail, per user's explicit request to keep slides terse and put detail only in the outline)
 
-### Pipeline diagram restyle — matched to user-supplied reference (`5-layer-detection-with-demo-2.html`)
-- Rewrote `.flow-step`/`.flow-arrow` CSS: each step in a `.flow` now gets a distinct accent color + soft glow via `nth-child` (blue→purple→orange→green→cyan→red, cycling through existing CSS vars), applied automatically to **every** pipeline diagram in the deck (Goal-overview flow, data-collection flow, model pipeline flow, time-alignment flow) — no per-slide markup changes needed beyond content
-- Added new `.pipe-detail-grid` / `.pipe-card` classes (colored top border matching the flow step above it) — used to replace the Model Pipeline's plain Step/Role/Key-tasks table with 4 colored cards, and reused for the "Three data categories" section (3 cards: Macro / Forex / Equity) and the Streamlit feature list
+### Compared the deck's Slide 1 intro workflow (`Data Collection -> EDA -> Model Pipeline -> Streamlit UI`) against the course's own "oversimplified schema machine learning workflow" (DSA course slides PDF, page 14: `data analysis -> framing -> training (loop: improve preprocessing, add data sources) -> move to PROD -> maintain`)
+- Rendered page 14 as an image via PyMuPDF (`fitz`) since `pdftoppm`/poppler isn't installed on this machine and `pdftotext` alone only returned the slide title, not the diagram
+- Found 3/5 stages map cleanly (data analysis=EDA, training=Model Pipeline, move to PROD=Streamlit UI) but 2 are implicit/missing in the deck's simplified diagram: **framing** (target/metric/feasibility/labelling decisions folded silently into the Target Variable slide) and **maintain** (out of scope — deliverable stops at the Streamlit demo); also noted the deck's linear flow arrow doesn't show the course schema's training-stage feedback loop (iterate on preprocessing / add data sources), even though the project did do this in practice (e.g., added Dataset 2/3 later, fixed `InfinityToNaNTransformer` after finding UK CPI deflation produced -inf)
 
-### Slide 2 (Data Sources & Pipeline) — table transposed to match horizontal flow
-- "Three data categories" table → converted to a 3-card diagram (category, source, contents)
-- The 6-step pipeline flow's Step/Role/Key-tasks table was **transposed**: step names now sit as column headers (color-matched to the flow diagram above), with two rows underneath ("Role", "Key tasks"); task descriptions shortened to fit horizontally, wrapped in `overflow-x:auto` for narrow viewports
+### Drafted 2 new slides ("Framing the Problem", "Maintain") directly in `draft_final_presentation.html` first, then reverted per user's follow-up request to keep them out of the shared deck entirely
+- Initially inserted both as real slides (12 -> 14, renumbered nav) to make the deck fully mirror the course's 5-stage schema
+- User then asked to split them into a personal-only file instead — removed both slide blocks and reverted the side-nav back to the original 12 entries; confirmed slide count is back to 12 via `slides.push(` grep count
 
-### Slide 3 (Data Limitations & Time Alignment) — vertical flow converted to horizontal
-- "Time-alignment without look-ahead bias" diagram changed from `.flow-vert` (4 stacked boxes with ↓ arrows) to `.flow` (horizontal, → arrows), text shortened to fit, colors applied automatically via the new nth-child CSS
+### Created `References/personal_framing_maintain_notes.md` (new file, gitignored)
+- Content/Speaker-notes format matching `presentation_outline.md`'s style, covering the same Framing (define target / business metric / POC feasibility-ROI / gather labelling) and Maintain (performance monitoring, data drift, concept drift, retraining cadence, label lag, versioning/rollback) material that was drafted for the deck, kept here instead as personal reference only
+- Added `References/personal_framing_maintain_notes.md` to `.gitignore` under the existing "Local-only files (never publish)" section
+- Added a `map.md` entry pointing to the new file (per project convention: update `map.md` immediately when creating a new file)
 
-### Slide 4 (Target Variable Definition) — added explicit task framing
-- Added a "Task: GBP/USD next-day direction prediction" box above the formula, spelling out What is predicted / Input / Target / Problem type in plain terms before the `Direction(t) = 1 if close(t+1) > close(t)` formula
-
-### Slide 1 (Introduction) — title made prominent
-- `<h1>` title font size increased (1.6rem → 2.6rem), centered, bold, gradient-colored (accent→accent2) via `background-clip:text`; subtitle centered to match
-
-### Verified in-browser
-- Served the file over a temporary local `python -m http.server` (Claude-in-Chrome blocks `file://` URLs) and visually checked: title slide, Data Sources & Pipeline (category cards + transposed table), Time-alignment (horizontal flow), Target Variable (task box), Models & Results (colored pipe-cards), new Streamlit App slide — all render correctly with matching colors
-
-**Stopped at:** all requested changes applied and visually verified; not yet reviewed by the user in their own browser, not committed/pushed.
+**Stopped at:** `draft_final_presentation.html` is back to its original 12-slide structure (only the 2 short italic cross-reference notes on slides 6/7 are new); `presentation_outline.md` has the fuller Slide 6/7 explanation; the Framing/Maintain material lives only in the new gitignored personal file, not in the graded deck.
 
 **Next steps:**
-1. User to do a final visual pass in their own browser (esp. the transposed table on narrow/projector widths — it has `min-width:820px` inside a scroll container)
-2. `push.bat` once approved, to commit the updated `draft_final_presentation.html`
-3. Resume Dataset 2/3 (90-day lookback / technical indicators) work and `src/app/app.py` build — still not started, carried over from earlier sessions
-4. Decide what to do with `References/06_Admin_Affiliation_Document.pdf` (flagged last session as likely misplaced personal data, still unresolved)
+1. `push.bat` once user wants to commit — the 2 short HTML notes + outline explanation are fine to share with the team; `References/personal_framing_maintain_notes.md` will NOT be pushed (gitignored), which is intentional
+2. Everything else still uncommitted from prior sessions (trained `.joblib` files, `model_comparison.csv`, `backtest.py`, dataset comparison report/scripts) remains pending, carried over unchanged
+3. Consider updating `CLAUDE.md`'s stale "Not yet built" list (still flagged across several sessions, still not done — project-instructions file the user may want to edit themselves)
 
 ---
 
-## 2026-07-03 16:00 — Rebuilt draft_final_presentation.html end-to-end with data-verified content
+## 2026-07-06 15:45 — Updated presentation deck (`draft_final_presentation.html` + `presentation_outline.md`) with Dataset 2/3 results and the new multi-dataset Streamlit app
 
 **Branch:** branch_lee
 
 **Done:**
 
-### reports/draft_final_presentation.html — resumed, then fully redesigned across several iterations
-- Initial resume: fixed missing `CV_B64`/`ACC_B64`/`SHARPE_B64` JS consts (the file had been interrupted mid-build, leaving Slide 8 charts blank) — embedded the 3 PNGs from `reports/figures/` as base64
-- Full redesign per user request: removed all speaker names/time badges/speaker notes from every slide; converted bullet lists to tables/grids/diagrams throughout; added a left sidebar outline (click to jump slides) and menu hide/show toggle
-- Added an Entity-Relationship Diagram for the data pipeline on Slide 2 — first attempt used mermaid.js via CDN but text contrast was unreadable (white-on-light rows); **rebuilt as static HTML/CSS cards** instead (no CDN dependency, guaranteed contrast using the deck's own color variables)
-- Added a light/dark theme toggle button (persisted via localStorage), a click-to-zoom lightbox for all chart/EDA images, tag-pill styling for EDA findings, and a real visual walk-forward CV diagram (color-coded grid: train/test/unused years per fold) generated by JS
-- Pulled 3 real images from `reports/eda_summary.html` (macro correlation heatmap, forex returns distribution, equity price series) into Slide 5 instead of describing them in bullets
+### Updated `reports/draft_final_presentation.html` (source of truth) to reflect that Dataset 2/3 are now trained and Streamlit supports all 3 datasets — both were still described as pending/Dataset-1-only in the deck
+- Embedded the 4 existing `dataset_comparison_{accuracy,auc,sharpe,overfit_gap}.png` charts as new base64 JS consts (`DSCOMP_ACC_B64`, `DSCOMP_AUC_B64`, `DSCOMP_SHARPE_B64`, `DSCOMP_GAP_B64`), wired through the same `__PLACEHOLDER__` → `.replace()` mechanism the deck already uses for its other charts
+- **Slide 9 (Models & Results):** added a new "Dataset 1 vs 2 vs 3 — does more data help?" box + the 4 new charts, with the key findings: Dataset 2 (90-day lookback, 9,110 cols) is a documented negative result — near coin-flip for all 12 models (p≫n); Dataset 3 (technical indicators) is a strong, consistent win for every tree/boosting model (80-85% acc., CV→Final gap <4pp) but linear models score *lower* than on Dataset 1, and — the counter-intuitive part — the much higher accuracy does not translate into a better Sharpe proxy. Also fixed the "Which model is most effective" and "Open issues & next steps" sections, which still said Dataset 2/3 and `backtest.py` were not yet built (both were completed in prior sessions)
+- **Slide 10 (Streamlit App):** flow diagram now shows a "Dataset selector" step before the model selector; feature cards and status table rewritten to describe 3-dataset support, correctly attributing the app changes already made in the prior 2026-07-06 session
+- **Slide 11 (Conclusion):** Goal 3/Goal 4 cards updated to mention the 216 model×fold×dataset pipeline count; "What's next" list dropped the stale "build Dataset 2/3" and "build backtest.py" bullets, replaced with real remaining work (extend `backtest.py` to Dataset 3's models, mitigate Dataset 2's p≫n problem)
+- Updated Time Budget (Slide 9 grows to ~1:25, new total ~11:25, trim suggestions added) and Speaker Notes for slides 9-11 to match
 
-### Data-verification pass — corrected several inaccurate claims in the deck
-- Analyzed `data/processed/dataset_basic_daily.csv` directly (pandas): actual shape is 2,868 × **111** columns (not 110 as CLAUDE.md states) — added a real column-breakdown table to Slide 6 (Forex 52, Equity 28, Macro 20, Date/Calendar 10, Target 1) with dtype and per-category NaN ratio (macro worst at 3.53% avg, USA CPI YoY worst single column at 10.46%)
-- Analyzed `reports/tables/model_comparison.csv` directly: confirmed only **12 of 22** registry models were actually trained (the other 10 — SVM kernels, Bagging_KNN, GB — are defined but never run, too slow at this scale); corrected Slide 8's wrong claim that CatBoost was "most reliable" — real 2024 held-out data shows Bagging_LR/LGBM lead on accuracy but XGB/HGB have the best Sharpe proxy, while Bagging_LR (accuracy leader) has the worst Sharpe — added this as an explicit "depends on the metric" table plus an Issues/Next-steps box
-- Rewrote the Bayesian search section to describe only what the team actually did (Optuna/TPE, 50 trials/model, F1-macro objective on an inner split) instead of a "paper vs ours" comparison, using the real search log (`reports/bayesian_search_fast_models.log`) — including the finding that Bagging_LR had the highest inner-validation F1 (0.756) but the worst real Sharpe, i.e. inner search score did not predict generalization
-- Added detailed Role/Key-tasks tables for both pipeline diagrams (data collection: fetch→raw→process→interim→build_dataset→final CSV; model pipeline: InfinityToNaNTransformer→SimpleImputer→RobustScaler→Model), each step's purpose grounded in actual source code (`src/models/preprocessing.py`, `src/models/model_registry.py`)
+### Verified end-to-end in a real browser (not just code review)
+- Served the file via a temporary local `python -m http.server 8899` (stopped afterward) since the Chrome extension can't navigate to `file://` URLs directly
+- Confirmed no console errors on load, and visually checked slides 9, 10, and 11 render correctly — all 4 new charts display, the `p≫n` HTML entity renders correctly, and the new Dataset selector flow diagram shows on slide 10
 
-### Slide 10 References — replaced placeholder text with real APA-7 citations
-- Extracted first-page text from all PDFs in `References/` via `pdftotext` to get real titles/authors/venues; wrote 9 full APA citations (previously the slide just said "FX direction prediction, LSTM volatility forecasting..." with no real citations)
-- Fixed a wrong author initial: primary reference is "Guyard, K. C." not "Guyard, T." (confirmed from the PDF itself)
-- **Found `References/06_Admin_Affiliation_Document.pdf` is not a research paper** — it's a French personal payroll/affiliation letter containing what looks like a personal address and client ID. Excluded it from citations and flagged it to the user as likely misplaced (not moved/deleted — user's call)
-- Rewrote AI Disclosure to reflect actual working relationship (team decided code/outline/plan; Claude Code executed under that direction, wrote testing code, explained concepts) instead of the earlier vaguer wording
-- Changed layout from 2-column grid to single vertical column (Primary reference → Data sources → Papers → AI Disclosure)
+### Updated `presentation_outline.md` to mirror the HTML exactly (per the file's own "source of truth" convention)
+- Added a new "What changed — 2026-07-06" changelog section (in addition to the existing slides 7-9 restructure changelog) documenting all 4 changes above
+- Mirrored the Slide 9/10/11 content blocks, speaker notes, Time Budget, Key Numbers, and Charts Available sections to match the HTML
 
-### Slide 1 — added course/class/team info
-- Added Course = "Statistical Analysis & Machine Learning", Class = "DSA Spring 2026", and full team names (Manimegalai Kumar-Periyasamy, Somitha Gudivada, Linh Hoang-Thuy) per user-supplied emails
-
-### Sidebar outline reorganized
-- Changed from "Part 1/Part 2" grouping to "Overview → Goal 1 (Data Collection) → Goal 2 (EDA & Target Definition) → Goal 3 (Model Pipeline & Metrics) → Goal 4 (Streamlit UI) → Wrap-up", matching the course's 4 official goals, each with sub-items
-
-**Stopped at:** presentation content and structure complete; not yet verified visually in a real browser this session (Claude-in-Chrome extension blocks `file://` URLs, so verification was via `Start-Process` opening the user's default browser — user has not yet confirmed final visual review).
+**Stopped at:** both `draft_final_presentation.html` and `presentation_outline.md` now correctly reflect Dataset 2/3 training + the multi-dataset Streamlit app; verified visually with no rendering issues. Deck total runtime is now ~11:25 (was ~10:50), with trim suggestions already written into the outline's Time Budget note.
 
 **Next steps:**
-1. User to visually review the rebuilt deck end-to-end (colors, ERD contrast, lightbox, walk-forward diagram, all data tables) in an actual browser
-2. Decide what to do with `References/06_Admin_Affiliation_Document.pdf` (likely move out of the project, contains personal data)
-3. Resume the Dataset 2/3 (90-day lookback / technical indicators) work planned in the previous session — not touched this session
-4. `push.bat` once the deck is approved, to commit the new `draft_final_presentation.html`
+1. Rehearse the deck at least once with the new Slide 9 content to confirm the ~1:25-over estimate is realistic and decide which trims (if any) from the Time Budget note to actually apply
+2. `push.bat` once user wants to commit — updated `draft_final_presentation.html` / `presentation_outline.md`, plus everything else still sitting uncommitted from prior sessions (trained `.joblib` files, `model_comparison.csv`, `backtest.py`, dataset comparison report/scripts)
+3. Consider updating `CLAUDE.md`'s stale "Not yet built" list (Dataset 2/3, `backtest.py`, multi-dataset Streamlit app are all done) — flagged across several sessions now, still not done since it's a project-instructions file the user may want to edit themselves
 
 ---
 
-## 2026-07-03 11:30 — Planned Dataset 2/3 training workflow, cleaned up duplicate global savelog command
+## 2026-07-06 — Updated Streamlit app to support Dataset 2 and Dataset 3 (previously hardcoded to Dataset 1 only)
 
 **Branch:** branch_lee
 
 **Done:**
 
-### Estimated training time for Dataset 2 (90-day lookback) and Dataset 3 (technical)
-- Used real `elapsed_s` data from `reports/tables/model_comparison.csv`: all 12 fast models × 6 folds on Dataset 1 (110 cols) took only ~103s total
-- Dataset 3 (~120-130 cols, modest technical-indicator addition): estimated ~2-5 min for full 12-model × 6-fold run
-- Dataset 2 (~9,700 cols from 90-day lag stack): estimated ~35-90 min, with `MLP`/`Bagging_LR`/`KNN` likely the slowest due to curse of dimensionality
-- Noted Dataset 2/3 CSVs are not yet built — `build_dataset.py` currently only handles Dataset 1
+### Found `src/app/app.py` was hardcoded to `dataset_basic_daily` even though Dataset 2 (90-day lookback) and Dataset 3 (technical indicators) were fully trained (12 models x 6 folds each, confirmed via `model_comparison.csv`'s `dataset` column and `models/trained/` filenames)
+- `DATASET_FILES` dict only had one entry; `dataset_name` was a hardcoded string; the model-comparison table and metric lookup never filtered by dataset — selecting a different dataset was not possible in the UI at all
 
-### Verified train.py / bayesian_search.py / app.py behavior for multi-dataset support
-- `train.py` and `bayesian_search.py` already support `--dataset dataset_90day_lookback` / `--dataset dataset_technical` via `DATASET_FILES` dict — no code changes needed there
-- Confirmed dataset name is embedded in `.joblib` filenames (`{model}_{dataset}_fold{N}.joblib`) and in the `(dataset, model, fold)` key used to update `model_comparison.csv`, so training Dataset 2/3 will not overwrite or require retraining Dataset 1 results
-- `app.py` currently hardcodes `dataset_name = "dataset_basic_daily"` (line 77) and its local `DATASET_FILES` only has one entry (line 36-38) — needs a small manual edit (add dataset selector) before it can show Dataset 2/3 results; `available_models()` already accepts `dataset_name` as a parameter so no change needed there
-- Recommended skipping Bayesian search for Dataset 2 (too slow at ~9,700 cols) and training with default params instead, consistent with the "fast models already proven to work" approach
+### Edited `src/app/app.py` (backed up to `.bak` first per project convention, removed after verifying the change works)
+- Added `DATASET_FILES` entries for `dataset_90day_lookback` and `dataset_technical`, plus a `DATASET_LABELS` dict for display names ("Dataset 1 -- Basic Daily" / "Dataset 2 -- 90-Day Lookback" / "Dataset 3 -- Technical Indicators")
+- Added a "Dataset" selectbox in the sidebar (above the existing Model/Fold selectors) — `load_dataset()`, `available_models()`, and `load_pipeline()` were already parameterized by `dataset_name`, so this was mostly wiring, not new logic
+- Fixed the metrics lookup and the "All models -- comparison" table to filter `comparison` by `dataset == dataset_name` (previously showed the whole 216-row table across all 3 datasets undifferentiated, and the metric cards could silently pick up a fold-label collision from another dataset)
+- Added a new "Dataset 1 vs 2 vs 3 -- comparison" section at the bottom rendering the 4 pre-built `dataset_comparison_*.png` charts from `scripts/generate_dataset_comparison_report.py` (accuracy/AUC/Sharpe/overfit-gap by dataset), with a caption pointing to the full `reports/dataset_comparison.html` narrative report
 
-### Housekeeping: removed duplicate global `/savelog` command
-- Found two `savelog.md` command files: global (`C:\Users\Hp\.claude\commands\savelog.md`) and project-local (`.claude\commands\savelog.md`)
-- Global version had a hardcoded path to a *different* project's memory file (`dsp-practical-work`) — stale leftover, not matching this project's conventions
-- User deleted the global version manually; project-local version (correct, scoped to this project's `SESSION_LOG.md`) kept
+### Verified end-to-end in a real browser (not just code review)
+- Launched `streamlit run src/app/app.py --server.headless true --server.port 8511`, confirmed HTTP 200 and no console errors
+- Used Chrome automation to select each dataset from the new dropdown: Dataset 1 loaded correctly (Bagging_DT fold final: 58.2% acc), switching to Dataset 3 correctly reloaded the model list and metrics (Bagging_DT fold final: 82.0% acc, 0.897 AUC — matches `model_comparison.csv`), confirming the dataset switch actually re-triggers `load_dataset`/`available_models`/`load_pipeline` instead of silently reusing cached Dataset-1 state
+- Scrolled to confirm the new dataset-comparison charts render without errors
+- Stopped the test server afterward (killed the streamlit/python processes and confirmed the port's listener PID was already gone — stale TCP entry, not a leaked process)
 
-**Stopped at:** planning/discussion only this session — no dataset build or training run executed yet.
+**Stopped at:** Streamlit app now fully supports all 3 datasets. No other app features changed (feature importance, prediction chart, per-fold chart_files section all still work as before, just correctly scoped to whichever dataset is selected).
 
 **Next steps:**
-1. Write `build_dataset.py` support (or a new script) to actually generate `dataset_90day_lookback.csv` and `dataset_technical.csv`
-2. Once built, run `python src/models/train.py --dataset dataset_technical --models <12 fast models>` (cheap, ~2-5 min)
-3. Run `python src/models/train.py --dataset dataset_90day_lookback --models <12 fast models>` (expect ~35-90 min, monitor RAM)
-4. Edit `app.py` to add a dataset selector before demoing Dataset 2/3 in Streamlit
-5. Build the presentation deck (Google Slides/PowerPoint) — deadline **2026-07-03**
-
----
-
-## 2026-07-02 (2) — Trained XGB/LGBM/MLP, refreshed comparison charts, gitignored catboost_info/
-
-**Branch:** branch_lee
-
-**Done:**
-
-### Closed the trained-model gap (Goal 3)
-- `python src/models/train.py --models XGB LGBM MLP --skip-existing` — all 3 models trained across 6 folds each (18 new `.joblib` files in `models/trained/`, untracked)
-- `models/trained/` now has all **12 fast models × 6 folds = 72 files**, matching the 12 tuned params in `models/search_results/`
-- `reports/tables/model_comparison.csv` now has 72 rows (was 54)
-
-### Re-ran comparison charts
-- `python scripts/plot_model_comparison.py` — regenerated all 4 PNGs in `reports/figures/` (`cv_vs_final_accuracy.png`, `auc_by_model.png`, `accuracy_per_fold.png`, `sharpe_by_model.png`) to include XGB/LGBM/MLP
-
-### Decision: stop at fast models
-- User decided **not** to train medium/slow models (GB, SVM_*, Bagging_KNN, Bagging_SVM_*) given time budget before the 2026-07-03 presentation deadline
-
-### Housekeeping: catboost_info/ gitignored
-- Added `catboost_info/` to `.gitignore`
-- Ran `git rm -r --cached catboost_info/` to untrack it (files still exist on disk, just no longer tracked/dirtying git status on every CatBoost run)
-
-**Stopped at:** all 3 next-steps items from the previous entry are done; nothing uncommitted needs review before `push.bat` except the usual (new joblib files, search_results JSONs, chart PNGs, CSV, .gitignore, this log).
-
-**Next steps:**
-1. Build the actual presentation deck (Google Slides/PowerPoint) — deadline **2026-07-03**
-2. `push.bat` to commit + push all pending changes (new models, charts, catboost_info removal, session log)
-3. `src/evaluation/backtest.py` still not built (mentioned in guide) — only if time allows after slides
-4. Dataset 2 (90-day) / Dataset 3 (technical) — only if course requires beyond Dataset 1
-
----
-
-## 2026-07-02 — Verified: Streamlit app running + Bayesian search complete for all fast models
-
-**Branch:** branch_lee
-
-**Done:**
-
-### src/app/app.py — verified working (Goal 4)
-- Confirmed file is complete (169 lines, docstring marks `STATUS: production`), not a scaffold
-- Loads trained pipelines from `models/trained/`, model/fold selector in sidebar, metrics row (accuracy/F1/AUC/Sharpe/drawdown), predicted-vs-actual chart, feature importance (tree models), full comparison table + 4 PNG charts
-- User confirmed running via `streamlit run src/app/app.py`
-
-### Bayesian search — completed for all 12 FAST_MODELS
-- `models/search_results/` now has 12 `*_best_params.json` files (one per fast model): LR, RF, XGB, LGBM, MLP, KNN, DT, ET, HGB, CatBoost, Bagging_DT, Bagging_LR
-- 3 new this session (untracked in git): `Bagging_DT`, `Bagging_LR`, `CatBoost` — the other 9 were already committed as of the last auto-push (`847653b`, 2026-07-01 13:20)
-
-### Gap found while verifying: trained joblib count lower than search-result count
-- `models/trained/` has only **54 files = 9 models × 6 folds** (Bagging_DT, Bagging_LR, CatBoost, DT, ET, HGB, KNN, LR, RF)
-- **XGB, LGBM, MLP have tuned Bayesian params but were never (re)trained** — no `.joblib` files, no rows in `reports/tables/model_comparison.csv`, so they don't appear in the Streamlit sidebar
-- Confirmed `xgboost` and `lightgbm` packages import fine in this environment — not a dependency issue, just not run yet
-
-**Stopped at:** verification pass only — no new training run triggered this session
-
-**Next steps:**
-1. Train the 3 missing fast models with tuned params: `python src/models/train.py --models XGB LGBM MLP --skip-existing`
-2. Re-run `scripts/plot_model_comparison.py` after the above (4 PNG charts will include the 3 new models)
-3. Decide whether to train medium/slow models (GB, SVM_*, Bagging_KNN, Bagging_SVM_*) or stop at fast models given time budget
-4. Build actual slides in Google Slides/PowerPoint (deadline July 3)
-5. Clean up `catboost_info/` noise in git status (modified every CatBoost run, never gitignored) — see `agent.md` known issues
+1. `push.bat` once user wants to commit — updated `src/app/app.py`, plus all the untracked `.joblib` files / `model_comparison.csv` updates / report files already sitting in git status from prior sessions (backtest.py, dataset_comparison report, etc. — still uncommitted per repo state at session start)
+2. Presentation deck review (`presentation_outline_NEW.md` / `draft_final_presentation_NEW.html`) still pending user approval, carried over from 2026-07-04/05
+3. Consider updating `CLAUDE.md`'s stale "Not yet built" list (Dataset 2/3, backtest.py, and now the multi-dataset Streamlit app are all done) — flagged in a prior session, still not done since it's a project-instructions file the user may want to edit themselves
 
 ---
 

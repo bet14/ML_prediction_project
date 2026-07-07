@@ -166,7 +166,9 @@ def _build_bagging_dt(p: dict):
     )
 
 def _build_bagging_lr(p: dict):
-    base = LogisticRegression(C=p.get("C", 1.0), solver="saga",
+    # lbfgs (not saga): ~20x faster on wide feature sets (e.g. dataset_90day_lookback's
+    # 9109 cols) for the same L2-penalty optimum -- saga was taking minutes per estimator.
+    base = LogisticRegression(C=p.get("C", 1.0), solver="lbfgs",
                                max_iter=1000, random_state=42)
     return BaggingClassifier(
         estimator=base, n_estimators=p.get("n_estimators", 20),

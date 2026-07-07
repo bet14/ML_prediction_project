@@ -35,6 +35,27 @@ from src.models.preprocessing import InfinityToNaNTransformer
 PROCESSED_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed")
 TRAINED_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "models", "trained")
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "reports", "tables")
+COMPARISON_PATH = os.path.join(RESULTS_DIR, "model_comparison.csv")
+
+KEY_COLS = ["dataset", "model", "fold"]
+
+
+def _upsert_record(record: dict) -> None:
+    """Append one (dataset, model, fold) result to model_comparison.csv immediately.
+
+    Writing after every fold (instead of once at the end of train_all) means a
+    killed/interrupted run still leaves all completed folds logged.
+    """
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    row = pd.DataFrame([record])
+    if os.path.exists(COMPARISON_PATH):
+        existing = pd.read_csv(COMPARISON_PATH)
+        key = tuple(record[c] for c in KEY_COLS)
+        existing = existing[
+            ~existing[KEY_COLS].apply(lambda r: tuple(r) == key, axis=1)
+        ]
+        row = pd.concat([existing, row], ignore_index=True)
+    row.to_csv(COMPARISON_PATH, index=False)
 
 DATASET_FILES = {
     "dataset_basic_daily": "dataset_basic_daily.csv",
@@ -179,6 +200,7 @@ def train_all(
                 **metrics,
             }
             records.append(record)
+            _upsert_record(record)
 
             if verbose:
                 auc = metrics["auc_roc"]

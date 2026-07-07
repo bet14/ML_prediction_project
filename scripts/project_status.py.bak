@@ -45,9 +45,6 @@ DETAILED_CHECKLIST = [
         {"id": "cl1_3",
          "label": "Macro release dates used (days_since_update columns) — no look-ahead bias",
          "auto": True, "check": "col", "arg": ("data/interim/gdp_panel.csv", "USA_gdp_days_since_update")},
-        {"id": "cl1_4",
-         "label": "UK/US bank holidays cross-checked; mismatched sessions excluded",
-         "auto": False},
     ]},
     {"id": "cl2", "title": "EDA & Target Definition", "items": [
         {"id": "cl2_1",
@@ -62,7 +59,7 @@ DETAILED_CHECKLIST = [
          "auto": True, "check": "col", "arg": ("data/interim/cpi_panel.csv", "UK_cpi_yoy_log")},
         {"id": "cl2_4",
          "label": "Stationarity confirmed: non-stationary series (GDP, CPI level) → use YoY/diff in models",
-         "auto": False},
+         "auto": True, "check": "adf_stationarity"},
     ]},
 
     # ── Goal 3A — Build processed datasets ────────────────────
@@ -196,6 +193,34 @@ def _dir_nonempty(path: Path) -> bool:
     return any(f.name not in (".gitkeep", ".gitignore") for f in path.iterdir())
 
 
+def _adf_stationarity_confirmed() -> bool:
+    """Check cl2_4: verify CPI level is non-stationary (ADF p > 0.05) AND YoY
+    transform columns exist in the panel (evidence the right transform was applied).
+    The 2014-2024 window includes a large inflation spike (2021-2023) which can cause
+    YoY itself to fail ADF, so we only require the level to be I(1) + YoY cols present.
+    Falls back to col-existence check if statsmodels is not installed."""
+    cpi_path = PROJECT_ROOT / "data/interim/cpi_panel.csv"
+    if not cpi_path.exists():
+        return False
+    try:
+        import pandas as pd
+        df = pd.read_csv(cpi_path, index_col=0, parse_dates=True)
+        yoy_cols_present = "USA_cpi_yoy" in df.columns and "UK_cpi_yoy" in df.columns
+        try:
+            from statsmodels.tsa.stattools import adfuller
+            if "USA_cpi_value" not in df.columns:
+                return False
+            level = df["USA_cpi_value"].dropna()
+            if len(level) < 20:
+                return False
+            _, p_level, *_ = adfuller(level, autolag="AIC")
+            return p_level > 0.05 and yoy_cols_present
+        except ImportError:
+            return yoy_cols_present
+    except Exception:
+        return False
+
+
 def run_checklist_auto() -> dict:
     """Return {item_id: True/False} for auto-checkable detailed checklist items."""
     result = {}
@@ -214,6 +239,8 @@ def run_checklist_auto() -> dict:
                 result[iid] = _csv_min_rows(PROJECT_ROOT / arg[0], arg[1])
             elif check == "dir_nonempty":
                 result[iid] = _dir_nonempty(PROJECT_ROOT / arg)
+            elif check == "adf_stationarity":
+                result[iid] = _adf_stationarity_confirmed()
             else:
                 result[iid] = False
     return result

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bayesian Search</title>
+<style>
+:root {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', monospace;
+  --radius: 10px;
+  --sidebar-w: 260px;
+  --transition: 0.25s ease;
+}
+[data-theme="dark"] {
+  --bg: #050505; --bg2: #121212; --bg3: #1e1e1e;
+  --border: #333333; --text: #fafafa; --text-muted: #a0a0a0;
+  --accent: #4a9eff; --accent2: #9d7eff; --green: #1abc9c;
+  --amber: #f39c12; --red: #e74c3c;
+  --tab-active-bg: #4a9eff; --tab-active-text: #050505;
+  --chart-grid: rgba(255,255,255,0.08);
+}
+[data-theme="light"] {
+  --bg: #f0f2f8; --bg2: #ffffff; --bg3: #e8ecf4;
+  --border: #d0d5e8; --text: #06090f; --text-muted: #1e293b;
+  --accent: #4361ee; --accent2: #7c3aed; --green: #059669;
+  --amber: #d97706; --red: #dc2626;
+  --tab-active-bg: #4361ee; --tab-active-text: #fff;
+  --chart-grid: rgba(0,0,0,0.12);
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans); background: var(--bg); color: var(--text); }
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 100;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 16px; gap: 14px;
+}
+#toggle-sidebar-btn, #theme-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 14px;
+}
+#topbar h1 { font-size: 17px; margin: 0; flex: 1; }
+#topbar h1 span { color: var(--accent); }
+#sidebar {
+  position: fixed; top: 52px; left: 0; bottom: 0; width: var(--sidebar-w);
+  background: var(--bg2); border-right: 1px solid var(--border);
+  overflow-y: auto; transition: transform var(--transition); z-index: 90; padding: 16px 0;
+}
+#sidebar.hidden { transform: translateX(-260px); }
+.sidebar-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); padding: 14px 20px 6px; }
+.nav-link {
+  display: block; padding: 9px 20px; color: var(--text-muted); text-decoration: none;
+  font-size: 14px; border-left: 3px solid transparent; cursor: pointer;
+}
+.nav-link:hover { background: var(--bg3); color: var(--text); }
+.nav-link.active { border-left-color: var(--accent); color: var(--accent); font-weight: 600; background: var(--bg3); }
+#main {
+  margin-left: var(--sidebar-w); margin-top: 52px; padding: 36px 48px 80px;
+  max-width: 900px; transition: margin-left var(--transition);
+}
+#main.expanded { margin-left: 0; }
+.page { display: none; opacity: 0; transform: translateY(8px); transition: opacity 0.3s ease, transform 0.3s ease; }
+.page.active { display: block; opacity: 1; transform: translateY(0); }
+h2 { font-size: 24px; margin-bottom: 6px; }
+h3 { font-size: 17px; margin: 22px 0 10px; }
+p { line-height: 1.65; color: var(--text); }
+.subtitle { color: var(--text-muted); margin-top: 0; margin-bottom: 24px; font-size: 14px; }
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
+.card-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0; }
+.card-row .card { flex: 1; min-width: 180px; }
+.stat-val { font-size: 26px; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.steps { display: flex; justify-content: space-between; margin: 28px 0; position: relative; flex-wrap: wrap; gap: 8px; }
+.step { flex: 1; min-width: 110px; text-align: center; position: relative; cursor: pointer; }
+.step::after {
+  content: ''; position: absolute; top: 15px; left: 55%; width: 90%; height: 2px;
+  background: var(--border); z-index: 0;
+}
+.step:last-child::after { display: none; }
+.step-circle {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--bg3); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 13px;
+  font-weight: 700; position: relative; z-index: 1; color: var(--text-muted);
+}
+.step.done .step-circle { background: var(--accent); border-color: var(--accent); color: #fff; }
+.step-label { font-size: 12.5px; color: var(--text-muted); }
+.step.done .step-label { color: var(--text); }
+.callout { border-left: 3px solid var(--accent); background: var(--bg3); padding: 14px 18px; border-radius: 6px; margin: 18px 0; font-size: 14.5px; }
+.callout.green { border-left-color: var(--green); }
+.callout.amber { border-left-color: var(--amber); }
+.callout.red { border-left-color: var(--red); }
+.tabs { display: flex; gap: 8px; margin: 20px 0 0; flex-wrap: wrap; }
+.tab-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text-muted); padding: 8px 16px; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 13.5px; }
+.tab-btn.active { background: var(--tab-active-bg); color: var(--tab-active-text); border-color: var(--tab-active-bg); font-weight: 600; }
+.tab-panel { display: none; background: var(--bg2); border: 1px solid var(--border); border-radius: 0 8px 8px 8px; padding: 20px; }
+.tab-panel.active { display: block; }
+.chart-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 18px 0; }
+.compare-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+.compare-table th, .compare-table td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; }
+.compare-table th { background: var(--bg3); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.03em; }
+.compare-table tr:hover td { background: var(--bg3); }
+.badge-green { color: var(--green); font-weight: 600; }
+.badge-red { color: var(--red); font-weight: 600; }
+.badge-accent { color: var(--accent); font-weight: 600; }
+.slider-block { margin: 22px 0; }
+.slider-block label { display: block; font-size: 14px; margin-bottom: 8px; }
+.slider-val { color: var(--accent); font-weight: 700; margin-left: 6px; }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 6px; }
+.grid-cells { display: flex; gap: 6px; margin: 10px 0; }
+.grid-cell { flex: 1; height: 46px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; color: #fff; border: 1px solid var(--border); }
+pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; overflow-x: auto; font-family: var(--font-mono); font-size: 13px; }
+code { font-family: var(--font-mono); background: var(--bg3); padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+@media (max-width: 700px) {
+  #sidebar { transform: translateX(-260px); }
+  #sidebar.visible { transform: translateX(0); }
+  #main { margin-left: 0; padding: 24px 18px 60px; }
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <button id="toggle-sidebar-btn" onclick="toggleSidebar()">☰</button>
+  <h1>Tìm Kiếm Kiểu <span>Bayes</span> (Bayesian Search)</h1>
+  <button id="theme-btn" onclick="toggleTheme()">Sáng</button>
+</div>
+
+<div id="sidebar">
+  <div class="sidebar-label">Nội dung</div>
+  <a class="nav-link active" onclick="showPage('overview')">Tổng quan</a>
+  <a class="nav-link" onclick="showPage('how-it-works')">Cách hoạt động</a>
+  <a class="nav-link" onclick="showPage('data')">Minh họa dữ liệu</a>
+  <a class="nav-link" onclick="showPage('controls')">Thử nghiệm tương tác</a>
+  <a class="nav-link" onclick="showPage('comparison')">So sánh phương pháp</a>
+</div>
+
+<div id="main">
+
+<!-- PAGE 1: OVERVIEW -->
+<div class="page active" id="page-overview">
+  <h2>Tổng quan về tìm kiếm kiểu Bayes</h2>
+  <p class="subtitle">Một cách tổ chức việc tìm kiếm mục tiêu bị mất, dựa trên việc cập nhật niềm tin dần theo bằng chứng.</p>
+
+  <p>Tìm kiếm kiểu Bayes (Bayesian search theory) là phương pháp phân bổ công sức tìm kiếm dựa trên xác suất, thay vì rải đều lực lượng trên toàn bộ khu vực nghi ngờ. Điểm cốt lõi: mỗi lần tìm mà không thấy mục tiêu cũng là một bằng chứng có giá trị, và bằng chứng đó được dùng để cập nhật lại bản đồ xác suất cho vòng tìm kiếm tiếp theo. Phương pháp này dựa trực tiếp trên định lý Bayes trong xác suất thống kê.</p>
+
+  <div class="card-row">
+    <div class="card"><div class="stat-val">1968</div><div class="stat-label">Tàu ngầm USS Scorpion được định vị nhờ phương pháp này, sau khi các phương pháp truyền thống thất bại</div></div>
+    <div class="card"><div class="stat-val">1857</div><div class="stat-label">Vụ đắm tàu SS Central America được John Craven tái dựng lại bằng phân tích Bayes, tìm thấy năm 1988</div></div>
+    <div class="card"><div class="stat-val">2011</div><div class="stat-label">Chuyến bay Air France 447 được tìm thấy sau khi đội tìm kiếm áp dụng lại mô hình Bayes cho khu vực đáy biển</div></div>
+  </div>
+
+  <h3>Vòng lặp cập nhật niềm tin</h3>
+  <div class="steps">
+    <div class="step done" onclick="markStep(1)"><div class="step-circle">1</div><div class="step-label">Xác lập xác suất ban đầu (prior)</div></div>
+    <div class="step" onclick="markStep(2)"><div class="step-circle">2</div><div class="step-label">Phân bổ công sức tìm kiếm theo prior</div></div>
+    <div class="step" onclick="markStep(3)"><div class="step-circle">3</div><div class="step-label">Thu thập bằng chứng (tìm thấy hoặc không)</div></div>
+    <div class="step" onclick="markStep(4)"><div class="step-circle">4</div><div class="step-label">Cập nhật thành xác suất mới (posterior)</div></div>
+    <div class="step" onclick="markStep(5)"><div class="step-circle">5</div><div class="step-label">Posterior trở thành prior cho vòng sau</div></div>
+  </div>
+
+  <div class="callout">
+    Điểm khác biệt căn bản so với tìm kiếm truyền thống: việc không tìm thấy mục tiêu ở một khu vực không phải là thông tin vô ích. Nó làm giảm xác suất mục tiêu nằm ở đó, và do đó làm tăng xác suất tương đối ở những khu vực chưa được tìm kỹ.
+  </div>
+</div>
+
+<!-- PAGE 2: HOW IT WORKS -->
+<div class="page" id="page-how-it-works">
+  <h2>Cách hoạt động</h2>
+  <p class="subtitle">Từ công thức Bayes đến bản đồ xác suất và ví dụ số cụ thể.</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('how', 'basics')">Công thức nền tảng</button>
+    <button class="tab-btn" onclick="switchTab('how', 'map')">Bản đồ xác suất</button>
+    <button class="tab-btn" onclick="switchTab('how', 'example')">Ví dụ tính toán</button>
+  </div>
+
+  <div class="tab-panel active" id="how-basics">
+    <p>Định lý Bayes phát biểu rằng xác suất của một giả thuyết sau khi có bằng chứng mới tỉ lệ với xác suất trước đó nhân với khả năng bằng chứng đó xảy ra nếu giả thuyết đúng:</p>
+    <pre>P(mục tiêu ở ô i | không tìm thấy) = P(mục tiêu ở ô i) × P(không tìm thấy | mục tiêu ở ô i)
+                                        ────────────────────────────────────────────────
+                                        P(không tìm thấy) tính trên toàn bộ khu vực</pre>
+    <p>Ba thành phần cần nhớ: <code>prior</code> là niềm tin ban đầu về vị trí mục tiêu (thường dựa trên hải lưu, đường bay cuối, lời khai nhân chứng); <code>likelihood</code> là khả năng phát hiện (POD - probability of detection) của thiết bị tìm kiếm tại từng ô, vốn không bao giờ tuyệt đối; <code>posterior</code> là xác suất mới sau khi kết hợp hai yếu tố trên, và posterior này lại trở thành prior của vòng tìm kiếm tiếp theo.</p>
+  </div>
+
+  <div class="tab-panel" id="how-map">
+    <p>Trực quan hóa quá trình cập nhật bằng sơ đồ luồng dưới đây. Khu vực tìm kiếm được chia thành các ô lưới, mỗi ô mang một xác suất. Sau mỗi vòng tìm kiếm không thành công, xác suất của ô đã tìm giảm xuống, phần xác suất đó được phân phối lại cho các ô còn lại theo tỉ lệ tương ứng với xác suất cũ của chúng.</p>
+    <div class="chart-wrap">
+      <svg viewBox="0 0 760 300" style="width:100%; height:auto;" id="flow-svg">
+        <!-- Prior box -->
+        <rect x="20" y="110" width="150" height="80" rx="10" fill="var(--bg3)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="95" y="140" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">Prior</text>
+        <text x="95" y="160" text-anchor="middle" fill="var(--text-muted)" font-size="11.5">Xác suất ban đầu theo ô</text>
+
+        <!-- arrow 1 -->
+        <line x1="170" y1="150" x2="230" y2="150" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- Search box -->
+        <rect x="235" y="60" width="150" height="80" rx="10" fill="var(--bg3)" stroke="var(--amber)" stroke-width="2"/>
+        <text x="310" y="90" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">Tìm kiếm</text>
+        <text x="310" y="110" text-anchor="middle" fill="var(--text-muted)" font-size="11.5">Phân bổ công sức</text>
+        <text x="310" y="124" text-anchor="middle" fill="var(--text-muted)" font-size="11.5">theo ô có prior cao</text>
+
+        <!-- arrow 2 -->
+        <line x1="385" y1="100" x2="440" y2="100" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- Likelihood box -->
+        <rect x="445" y="60" width="150" height="80" rx="10" fill="var(--bg3)" stroke="var(--red)" stroke-width="2"/>
+        <text x="520" y="90" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">Likelihood</text>
+        <text x="520" y="110" text-anchor="middle" fill="var(--text-muted)" font-size="11.5">POD của thiết bị</text>
+        <text x="520" y="124" text-anchor="middle" fill="var(--text-muted)" font-size="11.5">tại ô đã tìm</text>
+
+        <!-- arrow 3 -->
+        <line x1="595" y1="100" x2="640" y2="150" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <!-- Posterior box -->
+        <rect x="590" y="160" width="150" height="80" rx="10" fill="var(--bg3)" stroke="var(--green)" stroke-width="2"/>
+        <text x="665" y="190" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">Posterior</text>
+        <text x="665" y="210" text-anchor="middle" fill="var(--text-muted)" font-size="11.5">Xác suất mới,</text>
+        <text x="665" y="224" text-anchor="middle" fill="var(--text-muted)" font-size="11.5">phân phối lại các ô</text>
+
+        <!-- feedback arrow curving back to prior -->
+        <path d="M 590 210 C 400 270, 200 250, 100 190" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow2)"/>
+        <text x="345" y="280" text-anchor="middle" fill="var(--accent2)" font-size="12">posterior trở thành prior của vòng kế tiếp</text>
+
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="var(--text-muted)"/>
+          </marker>
+          <marker id="arrow2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent2)"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+    <p>Sơ đồ trên thể hiện đúng bản chất tuần hoàn của phương pháp: đây không phải quy trình một lần mà là một vòng lặp, mỗi vòng làm bản đồ xác suất "sắc nét" hơn, tập trung dần vào khu vực có khả năng cao nhất.</p>
+  </div>
+
+  <div class="tab-panel" id="how-example">
+    <p>Giả sử khu vực tìm kiếm chia thành 3 ô A, B, C với prior lần lượt là 0.5, 0.3, 0.2. Đội tìm kiếm ô A với POD = 0.6 nhưng không thấy gì. Xác suất mới của từng ô được tính như sau:</p>
+    <pre>P(không thấy | mục tiêu ở A) = 1 - 0.6 = 0.4
+Tử số A = 0.5 × 0.4 = 0.20
+Tử số B = 0.3 × 1   = 0.30   (chưa tìm B nên không đổi)
+Tử số C = 0.2 × 1   = 0.20
+Tổng     = 0.70
+
+Posterior A = 0.20 / 0.70 ≈ 0.286
+Posterior B = 0.30 / 0.70 ≈ 0.429
+Posterior C = 0.20 / 0.70 ≈ 0.286</pre>
+    <p>Kết quả: dù A vẫn có prior cao nhất ban đầu, sau một lần tìm không thành công, B lại trở thành ô có xác suất cao nhất. Vòng tìm kiếm tiếp theo nên ưu tiên B.</p>
+  </div>
+</div>
+
+<!-- PAGE 3: DATA -->
+<div class="page" id="page-data">
+  <h2>Minh họa bản đồ xác suất qua các vòng</h2>
+  <p class="subtitle">Theo dõi cách xác suất từng ô thay đổi khi tìm kiếm liên tục ở ô có xác suất cao nhất mà không thành công.</p>
+
+  <h3>Vòng 0 — prior ban đầu</h3>
+  <div class="grid-cells">
+    <div class="grid-cell" style="background:#4a9eff">A: 0.40</div>
+    <div class="grid-cell" style="background:#6fb4ff">B: 0.25</div>
+    <div class="grid-cell" style="background:#9fcaff">C: 0.20</div>
+    <div class="grid-cell" style="background:#c6dfff; color:#111">D: 0.15</div>
+  </div>
+
+  <h3>Vòng 1 — sau khi tìm ô A, POD = 0.7, không thấy</h3>
+  <div class="grid-cells">
+    <div class="grid-cell" style="background:#c6dfff; color:#111">A: 0.20</div>
+    <div class="grid-cell" style="background:#4a9eff">B: 0.34</div>
+    <div class="grid-cell" style="background:#6fb4ff">C: 0.27</div>
+    <div class="grid-cell" style="background:#9fcaff">D: 0.19</div>
+  </div>
+
+  <h3>Vòng 2 — sau khi tìm ô B, POD = 0.7, không thấy</h3>
+  <div class="grid-cells">
+    <div class="grid-cell" style="background:#dcebff; color:#111">A: 0.24</div>
+    <div class="grid-cell" style="background:#dcebff; color:#111">B: 0.16</div>
+    <div class="grid-cell" style="background:#4a9eff">C: 0.37</div>
+    <div class="grid-cell" style="background:#7fbaff">D: 0.23</div>
+  </div>
+
+  <table class="compare-table">
+    <tr><th>Ô</th><th>Prior (vòng 0)</th><th>Sau vòng 1</th><th>Sau vòng 2</th><th>Xu hướng</th></tr>
+    <tr><td>A</td><td>0.40</td><td>0.20</td><td>0.24</td><td class="badge-red">giảm rồi tăng nhẹ</td></tr>
+    <tr><td>B</td><td>0.25</td><td>0.34</td><td>0.16</td><td class="badge-red">tăng rồi giảm mạnh</td></tr>
+    <tr><td>C</td><td>0.20</td><td>0.27</td><td class="badge-green">0.37</td><td class="badge-green">tăng liên tục</td></tr>
+    <tr><td>D</td><td>0.15</td><td>0.19</td><td>0.23</td><td class="badge-accent">tăng dần, chưa tìm lần nào</td></tr>
+  </table>
+
+  <div class="callout amber">
+    Ô D chưa từng được tìm kiếm nhưng xác suất của nó vẫn tăng theo từng vòng. Đây là hệ quả tự nhiên của việc chuẩn hóa xác suất (normalization): tổng các ô luôn bằng 1, nên khi các ô khác giảm, phần còn lại phải tăng lên tương ứng.
+  </div>
+</div>
+
+<!-- PAGE 4: CONTROLS -->
+<div class="page" id="page-controls">
+  <h2>Thử nghiệm tương tác</h2>
+  <p class="subtitle">Điều chỉnh POD và prior ban đầu để xem posterior thay đổi ra sao sau một lần tìm không thành công.</p>
+
+  <div class="slider-block">
+    <label>Prior của ô đang tìm: <span class="slider-val" id="val-prior">0.40</span></label>
+    <input type="range" id="slider-prior" min="5" max="90" value="40" oninput="updateBayes()">
+  </div>
+
+  <div class="slider-block">
+    <label>Xác suất phát hiện của thiết bị (POD): <span class="slider-val" id="val-pod">0.70</span></label>
+    <input type="range" id="slider-pod" min="10" max="99" value="70" oninput="updateBayes()">
+  </div>
+
+  <div class="card">
+    <p style="margin:0 0 8px;">Kết quả sau một lần tìm không thành công tại ô này (phần xác suất còn lại được chia đều cho các ô khác):</p>
+    <div class="progress-bar" style="height:7px; background:var(--bg3); border-radius:4px; overflow:hidden; margin:14px 0;">
+      <div id="posterior-bar" style="height:100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); width:20%; transition: width 0.3s ease;"></div>
+    </div>
+    <div class="stat-val" id="posterior-result">0.20</div>
+    <div class="stat-label">Posterior của ô này sau khi tìm không thấy</div>
+  </div>
+
+  <div class="callout">
+    Có thể quan sát: khi POD càng cao mà vẫn không tìm thấy, mức giảm xác suất của ô đó càng mạnh — vì bằng chứng "không thấy" từ một thiết bị đáng tin cậy có giá trị loại trừ lớn hơn nhiều so với bằng chứng từ thiết bị kém tin cậy.
+  </div>
+</div>
+
+<!-- PAGE 5: COMPARISON -->
+<div class="page" id="page-comparison">
+  <h2>So sánh với tìm kiếm lưới truyền thống</h2>
+  <p class="subtitle">Tìm kiếm kiểu Bayes so với tìm kiếm rải đều (uniform grid search) — về tốc độ hội tụ và giả định nền tảng.</p>
+
+  <div class="chart-wrap">
+    <svg viewBox="0 0 700 320" style="width:100%; height:auto;">
+      <!-- axes -->
+      <line x1="60" y1="20" x2="60" y2="270" stroke="var(--text-muted)" stroke-width="1.5"/>
+      <line x1="60" y1="270" x2="670" y2="270" stroke="var(--text-muted)" stroke-width="1.5"/>
+      <text x="20" y="20" fill="var(--text-muted)" font-size="12">P(tìm thấy)</text>
+      <text x="600" y="292" fill="var(--text-muted)" font-size="12">Số vòng tìm kiếm</text>
+
+      <!-- gridlines -->
+      <line x1="60" y1="220" x2="670" y2="220" stroke="var(--chart-grid)" stroke-width="1"/>
+      <line x1="60" y1="170" x2="670" y2="170" stroke="var(--chart-grid)" stroke-width="1"/>
+      <line x1="60" y1="120" x2="670" y2="120" stroke="var(--chart-grid)" stroke-width="1"/>
+      <line x1="60" y1="70" x2="670" y2="70" stroke="var(--chart-grid)" stroke-width="1"/>
+      <text x="30" y="274" fill="var(--text-muted)" font-size="11">0%</text>
+      <text x="30" y="224" fill="var(--text-muted)" font-size="11">25%</text>
+      <text x="30" y="174" fill="var(--text-muted)" font-size="11">50%</text>
+      <text x="30" y="124" fill="var(--text-muted)" font-size="11">75%</text>
+      <text x="22" y="74" fill="var(--text-muted)" font-size="11">100%</text>
+
+      <!-- Bayesian curve: fast convergence -->
+      <polyline points="60,270 130,190 200,130 270,95 340,72 410,55 480,44 550,37 620,32 670,29"
+        fill="none" stroke="var(--accent)" stroke-width="3"/>
+
+      <!-- Uniform grid curve: linear/slow -->
+      <polyline points="60,270 130,246 200,222 270,198 340,174 410,150 480,126 550,102 620,78 670,60"
+        fill="none" stroke="var(--text-muted)" stroke-width="3" stroke-dasharray="6,4"/>
+
+      <!-- legend -->
+      <line x1="420" y1="30" x2="450" y2="30" stroke="var(--accent)" stroke-width="3"/>
+      <text x="456" y="34" fill="var(--text)" font-size="12">Tìm kiếm kiểu Bayes</text>
+      <line x1="420" y1="50" x2="450" y2="50" stroke="var(--text-muted)" stroke-width="3" stroke-dasharray="6,4"/>
+      <text x="456" y="54" fill="var(--text)" font-size="12">Tìm kiếm lưới đều</text>
+    </svg>
+  </div>
+  <p>Đường biểu diễn cho thấy: với cùng số vòng tìm kiếm, tìm kiếm kiểu Bayes đạt xác suất phát hiện tích lũy cao hơn nhanh hơn, vì công sức luôn dồn vào nơi có khả năng cao nhất tại từng thời điểm. Tìm kiếm lưới đều tăng gần như tuyến tính vì mỗi ô nhận công sức như nhau, bất kể thông tin đã thu thập được từ các vòng trước.</p>
+
+  <table class="compare-table">
+    <tr><th>Tiêu chí</th><th>Tìm kiếm kiểu Bayes</th><th>Tìm kiếm lưới đều</th></tr>
+    <tr><td>Cách phân bổ công sức</td><td class="badge-green">Ưu tiên động, dựa trên posterior mới nhất</td><td>Cố định hoặc rải đều theo lịch trình</td></tr>
+    <tr><td>Sử dụng bằng chứng âm (không thấy)</td><td class="badge-green">Có, dùng để cập nhật toàn bộ bản đồ</td><td class="badge-red">Không, chỉ đánh dấu ô đã tìm là "xong"</td></tr>
+    <tr><td>Yêu cầu dữ liệu đầu vào</td><td class="badge-red">Cần ước lượng prior và POD hợp lý</td><td class="badge-green">Không cần mô hình xác suất</td></tr>
+    <tr><td>Hiệu quả khi prior chính xác</td><td class="badge-green">Rất cao</td><td>Trung bình</td></tr>
+    <tr><td>Rủi ro khi prior sai lệch</td><td class="badge-red">Có thể bỏ sót khu vực đúng trong thời gian dài</td><td class="badge-green">Ít rủi ro hơn vì không thiên vị khu vực nào</td></tr>
+    <tr><td>Ứng dụng tiêu biểu</td><td>Tìm tàu ngầm, máy bay mất tích, cứu hộ trên biển</td><td>Khảo sát địa hình, rà phá bom mìn theo khu vực</td></tr>
+  </table>
+
+  <div class="callout green">
+    Tìm kiếm kiểu Bayes vượt trội khi có đủ thông tin nền để xây prior hợp lý (dữ liệu hải lưu, lịch trình bay, lời khai nhân chứng). Khi thiếu thông tin nền đáng tin cậy, một prior sai có thể khiến toàn bộ chiến dịch tìm kiếm chệch hướng lâu dài — đây chính là lý do một số chiến dịch thực tế kết hợp cả hai cách tiếp cận.
+  </div>
+</div>
+
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isDark ? 'Tối' : 'Sáng';
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  if (window.innerWidth <= 700) {
+    sidebar.classList.toggle('visible');
+  } else {
+    sidebar.classList.toggle('hidden');
+    main.classList.toggle('expanded');
+  }
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function switchTab(group, panel) {
+  const tabsContainer = event.currentTarget.parentElement;
+  tabsContainer.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  const allPanels = document.querySelectorAll('[id^="' + group + '-"]');
+  allPanels.forEach(p => p.classList.remove('active'));
+  document.getElementById(group + '-' + panel).classList.add('active');
+}
+
+function markStep(n) {
+  const steps = document.querySelectorAll('.step');
+  steps.forEach((s, i) => {
+    if (i < n) s.classList.add('done');
+    else s.classList.remove('done');
+  });
+}
+
+function updateBayes() {
+  const prior = parseInt(document.getElementById('slider-prior').value) / 100;
+  const pod = parseInt(document.getElementById('slider-pod').value) / 100;
+  document.getElementById('val-prior').textContent = prior.toFixed(2);
+  document.getElementById('val-pod').textContent = pod.toFixed(2);
+
+  const notFoundGivenTarget = 1 - pod;
+  const numerator = prior * notFoundGivenTarget;
+  const denominator = numerator + (1 - prior) * 1;
+  const posterior = numerator / denominator;
+
+  document.getElementById('posterior-result').textContent = posterior.toFixed(3);
+  document.getElementById('posterior-bar').style.width = (posterior * 100) + '%';
+}
+
+function renderCharts() {
+  updateBayes();
+}
+
+window.addEventListener('load', function() {
+  setTimeout(renderCharts, 100);
+});
+window.addEventListener('resize', function() {
+  if (document.getElementById('page-controls').classList.contains('active')) {
+    renderCharts();
+  }
+});
+</script>
+</body>
+</html>

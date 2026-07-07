@@ -35,6 +35,14 @@ FIGURES_DIR = os.path.join(ROOT_DIR, "reports", "figures")
 
 DATASET_FILES = {
     "dataset_basic_daily": "dataset_basic_daily.csv",
+    "dataset_90day_lookback": "dataset_90day_lookback.csv",
+    "dataset_technical": "dataset_technical.csv",
+}
+
+DATASET_LABELS = {
+    "dataset_basic_daily": "Dataset 1 -- Basic Daily",
+    "dataset_90day_lookback": "Dataset 2 -- 90-Day Lookback",
+    "dataset_technical": "Dataset 3 -- Technical Indicators",
 }
 
 FOLD_LABELS = ["1", "2", "3", "4", "5", "final"]
@@ -74,17 +82,20 @@ st.set_page_config(page_title="GBP/USD Direction Prediction", layout="wide")
 st.title("GBP/USD Next-Day Direction Prediction")
 st.caption("Walk-forward CV, 2014-2024 daily data. Adapted from Guyard & Deriaz (2024).")
 
-dataset_name = "dataset_basic_daily"
-df = load_dataset(dataset_name)
 comparison = load_comparison()
-models = available_models(dataset_name)
-
-if not models:
-    st.error(f"No trained models found in models/trained/ for {dataset_name}.")
-    st.stop()
 
 with st.sidebar:
     st.header("Model selection")
+    dataset_name = st.selectbox(
+        "Dataset",
+        list(DATASET_FILES.keys()),
+        format_func=lambda d: DATASET_LABELS[d],
+    )
+    df = load_dataset(dataset_name)
+    models = available_models(dataset_name)
+    if not models:
+        st.error(f"No trained models found in models/trained/ for {dataset_name}.")
+        st.stop()
     model_name = st.selectbox("Model", models)
     fold_label = st.selectbox("Fold", FOLD_LABELS, index=len(FOLD_LABELS) - 1)
     st.caption("Fold 'final' = held-out 2024 test set (never used in training/tuning).")
@@ -101,7 +112,9 @@ X_train, y_train, X_test, y_test = folds[fold_index]
 st.subheader(f"{model_name} -- fold {fold_label}")
 
 row = comparison[
-    (comparison["model"] == model_name) & (comparison["fold"] == fold_label)
+    (comparison["dataset"] == dataset_name)
+    & (comparison["model"] == model_name)
+    & (comparison["fold"] == fold_label)
 ] if not comparison.empty else pd.DataFrame()
 
 metric_cols = st.columns(5)
@@ -146,10 +159,12 @@ if hasattr(model_step, "feature_importances_"):
     st.bar_chart(importances.sort_values(ascending=False).head(15))
 
 st.markdown("---")
-st.markdown("### All models -- comparison")
+st.markdown(f"### All models -- comparison ({DATASET_LABELS[dataset_name]})")
 if not comparison.empty:
     st.dataframe(
-        comparison.sort_values(["model", "fold"]).reset_index(drop=True),
+        comparison[comparison["dataset"] == dataset_name]
+        .sort_values(["model", "fold"])
+        .reset_index(drop=True),
         use_container_width=True,
     )
 else:
@@ -167,3 +182,18 @@ for i, (fname, caption) in enumerate(chart_files):
     path = os.path.join(FIGURES_DIR, fname)
     if os.path.exists(path):
         cols[i % 2].image(path, caption=caption, use_container_width=True)
+
+st.markdown("---")
+st.markdown("### Dataset 1 vs 2 vs 3 -- comparison")
+st.caption("Full 12-model x 6-fold x 3-dataset grid. See reports/dataset_comparison.html for the full narrative report.")
+dataset_chart_files = [
+    ("dataset_comparison_accuracy.png", "Accuracy by dataset"),
+    ("dataset_comparison_auc.png", "AUC-ROC by dataset"),
+    ("dataset_comparison_sharpe.png", "Sharpe proxy by dataset"),
+    ("dataset_comparison_overfit_gap.png", "Overfit gap (CV vs final) by dataset"),
+]
+cols2 = st.columns(2)
+for i, (fname, caption) in enumerate(dataset_chart_files):
+    path = os.path.join(FIGURES_DIR, fname)
+    if os.path.exists(path):
+        cols2[i % 2].image(path, caption=caption, use_container_width=True)

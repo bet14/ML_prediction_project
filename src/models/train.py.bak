@@ -94,6 +94,7 @@ def train_all(
     model_names: list = None,
     fold_indices: list = None,
     verbose: bool = True,
+    skip_existing: bool = False,
 ) -> pd.DataFrame:
     """
     Train all requested models across specified walk-forward folds.
@@ -135,6 +136,16 @@ def train_all(
             X_train, y_train, X_test, y_test = folds[fi]
             fold_label = "final" if fi == len(folds) - 1 else str(fi + 1)
 
+            model_path = os.path.join(
+                TRAINED_DIR,
+                f"{model_name}_{dataset_name}_fold{fold_label}.joblib",
+            )
+
+            if skip_existing and os.path.exists(model_path):
+                if verbose:
+                    print(f"  [{model_name}] fold={fold_label:<6} SKIPPED (file exists)")
+                continue
+
             t0 = time.time()
             pipe = build_pipeline(model_name, best_params)
             pipe.fit(X_train, y_train)
@@ -153,10 +164,6 @@ def train_all(
                 returns=_compute_log_returns(X_test),
             )
 
-            model_path = os.path.join(
-                TRAINED_DIR,
-                f"{model_name}_{dataset_name}_fold{fold_label}.joblib",
-            )
             joblib.dump(pipe, model_path)
 
             record = {
@@ -207,15 +214,19 @@ if __name__ == "__main__":
                         choices=list(REGISTRY.keys()))
     parser.add_argument("--fold", type=int, default=None,
                         help="Single fold index (0-based). Default: all.")
+    parser.add_argument("--skip-existing", action="store_true",
+                        help="Skip folds whose .joblib file already exists (resume mode).")
     args = parser.parse_args()
 
     fold_indices = [args.fold] if args.fold is not None else None
-    print(f"Dataset : {args.dataset}")
-    print(f"Models  : {args.models}")
-    print(f"Folds   : {fold_indices or 'all'}")
+    print(f"Dataset        : {args.dataset}")
+    print(f"Models         : {args.models}")
+    print(f"Folds          : {fold_indices or 'all'}")
+    print(f"Skip existing  : {args.skip_existing}")
     print()
 
-    results = train_all(args.dataset, args.models, fold_indices)
+    results = train_all(args.dataset, args.models, fold_indices,
+                        skip_existing=args.skip_existing)
 
     print()
     print("=== Summary ===")

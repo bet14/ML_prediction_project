@@ -92,7 +92,9 @@ DETAILED_CHECKLIST = [
          "label": "Dataset 3 — Technical Indicators built (data/processed/dataset_technical.csv)",
          "auto": True, "check": "path", "arg": "data/processed/dataset_technical.csv"},
         {"id": "cl3_10",
-         "label": "All 16 technical indicator families computed per instrument (spec section 2.4)",
+         "label": "12/16 technical indicator families computed via `ta` library per instrument "
+                  "(spec section 2.4); #5 Momentum, #10 A/D Oscillator, #13 Disparity, #14 OSCP "
+                  "dropped — no `ta` equivalent (decision: References/DATASET_2_3_PLAN.md)",
          "auto": False},
     ]},
 

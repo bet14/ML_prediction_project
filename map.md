@@ -16,7 +16,9 @@
 | See full spec: column list, data requirements | `References/GBPUSD_ML_data_requirements_spec.md` |
 | Fast technical orientation for AI agents (architecture, flow, conventions, decisions, current gaps) | `agent.md` |
 | See detailed Goal 3 plan (3A datasets + 3B models) | `References/GOAL3_PLAN.md` |
+| See Dataset 2/3 build + train + report plan (draft, pending decisions) | `References/DATASET_2_3_PLAN.md` |
 | See pipeline ERD | `eurusd_data_pipeline_erd.html` |
+| Personal notes on "Framing" & "Maintain" course-schema stages (not in team deck, gitignored) | `References/personal_framing_maintain_notes.md` |
 
 ---
 
@@ -68,8 +70,8 @@
 | What you want to do | File/Command |
 |---|---|
 | Build Dataset 1 — Basic Daily (~110 cols) | `python src/features/build_dataset.py` → `data/processed/dataset_basic_daily.csv` |
-| Dataset 2 — 90-Day Lookback | **NOT BUILT YET** |
-| Dataset 3 — Technical Indicators (~2000 cols) | **NOT BUILT YET** |
+| Build Dataset 2 — 90-Day Lookback (~9,110 cols) | `python src/features/build_dataset_90day.py` → `data/processed/dataset_90day_lookback.csv` |
+| Build Dataset 3 — Technical Indicators (~1,178 cols) | `python src/features/build_dataset_technical.py` → `data/processed/dataset_technical.csv` (uses `src/features/technical_indicators.py`, 12/16 indicator families via `ta` library; equity limited to 4 non-redundant indices, same `REDUNDANT_INDICES` as Dataset 1) |
 
 ---
 
@@ -85,6 +87,12 @@
 | View trained models | `models/trained/*.joblib` |
 | View hyperparameter search results | `models/search_results/*_best_params.json` |
 | View model comparison table | `reports/tables/model_comparison.csv` |
+| Generate model comparison charts (CV vs final acc, AUC, per-fold acc, Sharpe) | `python scripts/plot_model_comparison.py --open` → `reports/figures/*.png` |
+| Generate ROC + Precision-Recall curves on the 2024 held-out fold | `python scripts/plot_roc_pr_curves.py --open` (default: XGB/HGB/Bagging_LR/LGBM; `--models all` for all 12 trained models) → `reports/figures/roc_pr_curves.png` |
+| Generate Dataset 1 vs 2 vs 3 comparison charts (accuracy/AUC/Sharpe/overfit gap, all 12 models) | `python scripts/plot_dataset_comparison.py --open` → `reports/figures/dataset_comparison_*.png` |
+| Generate bias-variance trade-off scatter (one per dataset; x=fold-to-fold accuracy std-dev, y=final accuracy; only 3-4 extreme models labeled) — draft support for Slide 8b | `python scripts/plot_variance_tradeoff.py --open` → `reports/figures/variance_tradeoff_dataset{1,2,3}_*.png` |
+| View Dataset 1 vs 2 vs 3 comparison report (key findings + charts + per-model tables) | `python scripts/generate_dataset_comparison_report.py --open` → `reports/dataset_comparison.html` |
+| Walk-forward backtest — stitch OOS fold predictions into one 2019-2024 equity curve, long/flat strategy vs buy-and-hold, spread-cost sensitivity | `python src/evaluation/backtest.py --dataset dataset_basic_daily --models XGB HGB --spread-pips 1.5 --open` → `reports/figures/equity_curve_<model>_<dataset>.png` + `reports/tables/backtest_<model>_<dataset>.csv` + `reports/tables/backtest_summary.csv` |
 
 ---
 

@@ -223,6 +223,15 @@ Key/
 # Local-only files (never publish)
 CLEANUP_BEFORE_SHARE.md
 *.bak
+References/personal_framing_maintain_notes.md
+Q&A_linh.md
 
 # CatBoost training artifacts (regenerated on every run, not meant to be versioned)
 catboost_info/
+
+# Large trained models and datasets (too big for GitHub push, keep local only)
+models/trained/*.joblib
+data/raw/**/*.csv
+data/interim/*.csv
+data/processed/*.csv
+!data/**/.gitkeep
