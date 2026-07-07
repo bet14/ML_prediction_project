@@ -1459,11 +1459,14 @@ slides.push(`
 
 <div class="box" style="margin-bottom:14px;">
   <h3>How the 4 course goals were executed</h3>
-  <div class="tag-group" style="margin-bottom:0;">
-    <span class="tag-pill"><b>Goal 1 — Data Collection</b> · FRED · ONS · yfinance: macro (USA+UK), 13 forex pairs, 9 equity indices fetched and harmonized into one daily panel; <code>realtime_start</code> tracked on every row to prevent look-ahead bias</span>
-    <span class="tag-pill"><b>Goal 2 — EDA &amp; Target</b> · Notebooks 01-03: target defined (next-day direction, 49.1% / 50.9% balanced); dropped non-stationary CPI levels + 5 correlated equity indices; engineered <code>rate_differential</code></span>
-    <span class="tag-pill"><b>Goal 3 — Model Pipeline</b> · 12 models × 3 datasets fine-tuned: 4-step sklearn Pipeline, 6-fold walk-forward CV, Bayesian search (50 trials/model), trained across all 3 datasets (216 model×fold×dataset rows) — every trained model fine-tuned, none left on library defaults</span>
-    <span class="tag-pill"><b>Goal 4 — Streamlit UI</b> · Built &amp; verified: supports switching between all 3 datasets — loads all 12 × 6 × 3 pre-trained pipelines from disk, instant predictions, no live training in the app</span>
+  <div class="flow">
+    <div class="flow-step">Goal 1 — Data Collection<span class="goal-badge">FRED · ONS · yfinance → macro (USA+UK) + 13 forex pairs + 9 equity indices → one daily panel, <code>realtime_start</code> tracked</span></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Goal 2 — EDA &amp; Target<span class="goal-badge">Notebooks 01-03 → target defined (49.1% / 50.9% balanced) → dropped non-stationary CPI + 5 correlated indices → engineered <code>rate_differential</code></span></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Goal 3 — Model Pipeline<span class="goal-badge">12 models × 3 datasets fine-tuned → 6-fold walk-forward CV → Bayesian search (50 trials/model) → 216 model×fold×dataset rows</span></div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Goal 4 — Streamlit UI<span class="goal-badge">Built &amp; verified → all 3 datasets → loads 12 × 6 × 3 pre-trained pipelines → instant predictions, no live training</span></div>
   </div>
 </div>
 
@@ -1482,21 +1485,53 @@ slides.push(`
 
 <div class="box" style="margin-bottom:14px;">
   <h3>Best-performing model — depends on the metric</h3>
-  <div class="tag-group" style="margin-bottom:0;">
-    <span class="tag-pill"><b>Accuracy leader</b> — Bagging_LR, 67.4%: highest 2024 held-out accuracy, but CV score (73.7%) was inflated 6.3pp above it — overfitting flag, weak regularization (C=5.50)</span>
-    <span class="tag-pill impl"><b>Recommended (risk-adjusted)</b> — XGB Sharpe 1.28 · HGB Sharpe 1.24: mid-table accuracy (61-62%) but the only two models where the accuracy story and the Sharpe-proxy story agree</span>
-    <span class="tag-pill"><b>Most stable</b> — XGB &amp; CatBoost: lowest fold-to-fold variance (σ≈0.03); CatBoost's final score (63.2%) even exceeds its CV mean — no overfitting signal</span>
+  <div class="pipe-detail-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="pipe-card">
+      <div class="pc-title">Accuracy leader</div>
+      <div class="pc-role">Bagging_LR — 67.4%</div>
+      <div>Highest 2024 held-out accuracy, but CV score (73.7%) was inflated 6.3pp above it — overfitting flag, weak regularization (C=5.50)</div>
+    </div>
+    <div class="pipe-card">
+      <div class="pc-title">Recommended (risk-adjusted)</div>
+      <div class="pc-role">XGB Sharpe 1.28 · HGB Sharpe 1.24</div>
+      <div>Mid-table accuracy (61-62%) but the only two models where the accuracy story and the Sharpe-proxy story agree</div>
+    </div>
+    <div class="pipe-card">
+      <div class="pc-title">Most stable</div>
+      <div class="pc-role">XGB &amp; CatBoost</div>
+      <div>Lowest fold-to-fold variance (σ≈0.03); CatBoost's final score (63.2%) even exceeds its CV mean — no overfitting signal</div>
+    </div>
   </div>
 </div>
 
 <div class="box">
   <h3>What's next</h3>
-  <div class="tag-group" style="margin-bottom:0;">
-    <span class="tag-pill"><b>Train the remaining registry models</b> — SVM (linear / rbf / sigmoid / poly), Bagging_SVM_*, Bagging_KNN, GB — already defined in <code>model_registry.py</code>, deprioritized purely on time behind today's deadline; adding them is a config change to <code>train.py</code>, not new engineering</span>
-    <span class="tag-pill">Extend <code>src/evaluation/backtest.py</code> (already built) to Dataset 3's top models — explain why 83% accuracy hasn't yet produced a better Sharpe proxy than Dataset 1</span>
-    <span class="tag-pill">Mitigate Dataset 2's p&gg;n problem (feature selection / PCA / dimensionality reduction on the 9,111-column lookback), or keep it as a documented negative result</span>
-    <span class="tag-pill">Try an ensemble of the top-Sharpe models (XGB + HGB) instead of a single best-accuracy pick</span>
-    <span class="tag-pill">Investigate why LR / Bagging_LR overfit (regularization strength vs. feature count/sample size)</span>
+  <div class="pipe-detail-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="pipe-card">
+      <div class="pc-title">Train remaining registry models</div>
+      <span class="tag-pill" style="margin:0 0 6px;">SVM · Bagging_SVM_* · Bagging_KNN · GB</span>
+      <div>Already defined in <code>model_registry.py</code>, deprioritized purely on time behind today's deadline — adding them is a config change to <code>train.py</code>, not new engineering</div>
+    </div>
+    <div class="pipe-card">
+      <div class="pc-title">Extend the backtest</div>
+      <span class="tag-pill" style="margin:0 0 6px;"><code>backtest.py</code> → Dataset 3</span>
+      <div>Already built for Dataset 1 — explain why 83% accuracy hasn't yet produced a better Sharpe proxy than Dataset 1</div>
+    </div>
+    <div class="pipe-card">
+      <div class="pc-title">Fix Dataset 2's p&gg;n</div>
+      <span class="tag-pill" style="margin:0 0 6px;">feature selection / PCA</span>
+      <div>Mitigate the 9,111-column lookback problem, or keep it as a documented negative result</div>
+    </div>
+    <div class="pipe-card">
+      <div class="pc-title">Try an ensemble</div>
+      <span class="tag-pill" style="margin:0 0 6px;">XGB + HGB</span>
+      <div>Combine the top-Sharpe models instead of picking a single best-accuracy model</div>
+    </div>
+    <div class="pipe-card">
+      <div class="pc-title">Investigate overfitting</div>
+      <span class="tag-pill" style="margin:0 0 6px;">LR / Bagging_LR</span>
+      <div>Regularization strength vs. feature count/sample size</div>
+    </div>
   </div>
 </div>
 `);
